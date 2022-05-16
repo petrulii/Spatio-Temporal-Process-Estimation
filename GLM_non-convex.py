@@ -2,6 +2,7 @@ import cvxpy as cp
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import erf
+from torch import arctan
 
 def arctangent(x):
   return np.arctan(x)
@@ -17,7 +18,7 @@ def gelu(x):
 
 # Inverse of the link function.
 def activation(lc):
-  return np.array(list(map(neg_inverse, lc)))
+  return np.array(list(map(arctangent, lc)))
 
 # Loss function.
 def loss(X, Y, b):
@@ -30,7 +31,7 @@ n_samples = 1000
 
 # Plotting the loss function in terms of beta.
 generated_beta = np.linspace(-1000, 1000, n_samples)
-true_beta = np.random.randn(n_features)+5
+true_beta = np.random.randn(n_features)
 X = np.array([np.random.randn(n_features) for i in range(n_samples)])
 Y = activation(np.multiply(X,[true_beta] * n_samples))# + np.random.randn(n_samples)
 plt.plot(generated_beta, [loss(X,Y,b) for b in generated_beta], label="Loss function")

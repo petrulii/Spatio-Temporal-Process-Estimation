@@ -7,8 +7,8 @@
 % Since each player makes his choice randomly and independently of the
 % other player's choice according to the probability distribution described
 % by the vectors u and v, the expected amount p1 pays is u'Pv and the
-% expected gain for p2 is u'Pv. Therefore p1 wishes to choose u to minimize
-% u'Pv, while p2 wishes to choose v to maximize u'Pv.
+% expected gain for p2 is u'Pv. Therefore p1 wants to find u to minimize
+% u'Pv, while p2 wants to find v to maximize u'Pv.
 
 % Set the solver
 clear all
@@ -16,11 +16,9 @@ cvx_solver sedumi
 
 % Input data
 rng(0);           % Setting the random seed to 0
-n = 2;         % Number of rows
-m = 2;         % Number of columns
-% P = [0.5488135  0.71518937; 0.60276338 0.54488318];%randn(n,m);   % Random pay-off matrix
-% P = [0.5488135 0.71518937 0.60276338; 0.54488318 0.4236548 0.64589411; 0.43758721 0.891773 0.96366276];
-P = [0 0; 0 0.54488318];
+n = 2000;         % Number of rows
+m = 1000;         % Number of columns
+P = randn(n,m);   % Random pay-off matrix
 
 % Optimal strategy for Player 1
 cvx_begin
