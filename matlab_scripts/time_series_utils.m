@@ -3,8 +3,8 @@ function main
     % Setting the random seed.
     rng('default')
     % Setting the parameters of 2-D binary time series.
-    rows = 16;
-    columns = 15;
+    rows = 6;
+    columns = 5;
     memory_depth = 3;
     periods = 4;
     rate = 0.1;
