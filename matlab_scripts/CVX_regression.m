@@ -3,63 +3,106 @@ function main
     % Set the random seed.
     rng('default')
     % Set the solver
-    clear all
-    cvx_solver sedumi
-    cvx_expert true
-    % Set the parameters of the 2-D binary time series.
-    rows = 10;
-    columns = 10;
+    %cvx_solver sedumi
     % Memory depth.
     d = 3;
-    % Number of locations.
-    L = rows*columns;
     periods = 4;
-    density = 0.01;
-    
-    % Generating Bernouilli time series of N time instances and L locations.
-    [time_horizon, N, L, true_theta] = generate_series(rows, columns, d, periods, density);
+    link = @sigmoid;
+    error = [];
+    distance = [];
+    %dimension = [];
+    all_lambda = [];
+    row = 7;
+    for lambda = 0:0.2:3
+        col = row;
+        density = (row+col)/(row*col);
+        % Generating Bernouilli time series of N time instances and L locations.
+        [time_horizon, N, L, true_theta] = generate_series(row, col, d, periods, density);
+        % Inferring theta, the parameter vector of the time series.
+        theta = estimate_parameters_lasso(time_horizon, N, L, d, lambda);
+        % Generate a prediction and compare with groud truth.
+        [err, dist] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, true_theta, theta, row, col, link, false);
+        error = [error err];
+        distance = [distance dist];
+        all_lambda = [all_lambda lambda];
+        %dimension = [dimension row*col];
+    end
+    plot(all_lambda, distance);
+    xlabel('Lambda');
+    ylabel('Euclidean distance between \theta and \theta^*'); 
+    saveas(gcf, 'distance', 'png');
+    plot(all_lambda, error);
+    xlabel('Lambda');
+    ylabel('Prediction error at t+1'); 
+    saveas(gcf, 'error', 'png');
+end
 
-    % Inferring theta, the parameter vector of the time series.
+function theta = estimate_parameters(time_horizon, N, L, d)
+    %{
+    param time_horizon : a time series of 2-D categorical events
+    param N : lenght of the time series
+    param L : number of locations in the 2-D grid where categorical events take place
+    param d : memory depth describing the depth of the autoregression
+    %}
     cvx_begin
         variable theta(L, d*L);
-        %variables x(2);
         obj = 0;
         for s = d:N
             X = time_horizon((s-d+1):s,:);
             X = reshape(X.',1,[]);
-            %X = X(:);
             y = time_horizon(s+1,:);
             for l = 1:L
                 theta_l = theta(l,:);
+                % Log-likelihood.
                 obj = obj + (y(l)'*dot(X,theta_l)-sum(log_sum_exp([zeros(1,1); dot(X',theta_l')])));
             end
         end
         maximize(obj);
     cvx_end
-    
-    % Setting parameters for prediction.
-    X_test = time_horizon((N-d)+1:N,:);
-    X_test = reshape(X_test.',1,[]);
-    % Generate a prediction and compare with groud truth.
-    predict(X_test, L, true_theta, theta, rows, columns, @sigmoid, true);
+end
+
+function theta = estimate_parameters_lasso(time_horizon, N, L, d, lambda)
+    %{
+    param time_horizon : a time series of 2-D categorical events
+    param N : lenght of the time series
+    param L : number of locations in the 2-D grid where categorical events take place
+    param d : memory depth describing the depth of the autoregression
+    %}
+    if lambda == 0
+        theta = estimate_parameters(time_horizon, N, L, d);
+    else
+        cvx_begin
+            variable theta(L, d*L);
+            obj = 0;
+            for s = d:N
+                X = time_horizon((s-d+1):s,:);
+                X = reshape(X.',1,[]);
+                y = time_horizon(s+1,:);
+                for l = 1:L
+                    theta_l = theta(l,:);
+                    % Log-likelihood with L1 penalty.
+                    obj = obj + (y(l)'*dot(X,theta_l)-sum(log_sum_exp([zeros(1,1); dot(X',theta_l')]))) - lambda * norm(theta_l,1);
+                end
+            end
+            maximize(obj);
+        cvx_end
+    end
 end
 
 % Prediction for time series of 2-D Bernouilli events.
-function prediction = predict(X_test, L, true_theta, theta, rows, columns, activation, heatmap)
+function [err, dist] = predict(X, y, L, true_theta, theta, rows, columns, activation, heatmap)
     if ~exist('heatmap','var')
         heatmap = false; end
-    y = normrnd(0,1,L,1);
-    prediction = normrnd(0,1,L,1);
+    X = reshape(X.',1,[]);
+    y = reshape(y.',1,[]);
+    prediction = normrnd(0,1,1,L);
     for l = 1:L
-        % Calculate the ground truth based on the true parameter vector.
-        y(l) = activation(dot(X_test, true_theta(l,:)));
-        % Calculate the prediction based on the inferred parameter vector.
-        prediction(l) = activation(dot(X_test, theta(l,:)));
+        prediction(l) = activation(dot(X, theta(l,:)));
     end
     % Calculate the error of the prediction.
     err = immse(y,prediction);
     dist = norm((true_theta-theta),2);
-    fprintf('%s %d\n', 'Prediction error:', err, 'distance between estimation and true parameters:', dist);
+    %fprintf('%s %d\n', 'Prediction error:', err, 'distance between estimation and true parameters:', dist);
     % Plot the ground truth and prediction heatmaps.
     if heatmap == true
         y = reshape(y,rows,columns);
@@ -116,7 +159,13 @@ function [time_horizon, N, L, true_theta] = generate_series(L_rows, L_columns, d
         X = time_horizon((s-d):(s-1),:);
         X = reshape(X.',1,[]);
         for l = 1:L
-            time_horizon(s,l) = binary_sigmoid(dot(X, true_theta(l,:)));
+            % Train data.
+            if s ~= (N+1)
+                time_horizon(s,l) = binary_sigmoid(dot(X, true_theta(l,:)));
+            % Test data.
+            else
+                time_horizon(s,l) = sigmoid(dot(X, true_theta(l,:)));
+            end
         end
     end
 end
