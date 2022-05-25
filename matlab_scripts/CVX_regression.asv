@@ -8,13 +8,12 @@ function main
     d = 3;
     periods = 4;
     error_log = [];
-    error_lin = [];
     zer = [];
     %dimension = [];
     all_lambda = [];
     row = 3;
     col = 3;
-    for lambda = 0:0.0000001:0.0000003%5
+    for lambda = 0:0.0000001:0.0000005
         density = (d)/(periods*row*col);
         fprintf('%s %d %s %d\n', 'Initial density of the series:', density, 'lambda:', lambda);
         % Generating Bernouilli time series of N time instances and L locations.
@@ -27,28 +26,28 @@ function main
         % Generate a prediction and compare with groud truth.
         [err_log, z] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, true_theta, theta, b, row, col, @sigmoid, false, d);
         error_log = [error_log err_log];
-        zer = [zer z];
         % Inferring theta, the parameter vector of the time series.
-        [theta, b] = linear(time_horizon, N, L, d, lambda);
+        [theta, b] = logistic(time_horizon, N, L, d, lambda);
         % Transform small values of theta to 0s.
         theta(theta>-0.0001 & theta<0.0001) = 0;
         % Generate a prediction and compare with groud truth.
-        [err_lin, ~] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, true_theta, theta, b, row, col, @identity, false, d);
+        [err_log, z] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, true_theta, theta, b, row, col, @sigmoid, false, d);
         error_lin = [error_lin err_lin];
+        zer = [zer z];
         all_lambda = [all_lambda lambda];
         %dimension = [dimension row*col];
     end
     plot(all_lambda, zer);
     xlabel('\lambda');
-    ylabel('Zero count in \theta');
+    ylabel('Zero count in \theta'); 
     saveas(gcf, 'distance', 'png');
     plot(all_lambda, error_log);
     xlabel('\lambda');
-    ylabel('Log-regression error at t+1');
+    ylabel('Log-regression error at t+1'); 
     saveas(gcf, 'error_log', 'png');
-    plot(all_lambda, error_lin);
+    plot(all_lambda, error_log);
     xlabel('\lambda');
-    ylabel('Linear-regression error at t+1');
+    ylabel('Linear-regression error at t+1'); 
     saveas(gcf, 'error_lin', 'png');
 end
 
