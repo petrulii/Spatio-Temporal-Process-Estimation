@@ -1,5 +1,6 @@
 % Main function.
 function horizon_tests
+    clear all;
     % Set the random seed.
     rng(0);
     % Memory depth.
@@ -9,17 +10,19 @@ function horizon_tests
     % Dimensions of 2-D space at any time instance.
     row = 10;
     col = row;
+    % Trying multiple lasso hyper-parameter values.
     % Determine density.
-    density = 0.01;
+    density = 0.1;
     % Generating Bernouilli time series of N time instances and L locations.
     [time_horizon, N, L, true_theta, true_b] = generate_series(row, col, d, periods, density);
 end
 
+% Log-it activation function.
 function y = sigmoid(x)
     y = (1+exp(-x)).^(-1);
 end
 
-% Bernouilli draw with probability p.
+% Binary log-it activation function.
 function y = Bernouilli_draw(p)
     r = rand();
     if r <= p
@@ -32,7 +35,7 @@ end
 function [time_horizon, N, L, theta, theta0] = generate_series(L_rows, L_columns, d, periods, density)
     % Number of locations.
     L = L_rows*L_columns;
-    % Length of the time horizon.
+    % Creating random events with some density over an n by m grid.
     N = d + d*periods;
     % For plotting.
     norm_X = zeros(1,N+1);
@@ -49,8 +52,11 @@ function [time_horizon, N, L, theta, theta0] = generate_series(L_rows, L_columns
         end
     end
     % Initialising the sparse true parameter vector and the initial probability.
+    %theta = normrnd(0, 1, L, d*L);
     theta = sprandn(L, d*L, density);
     fprintf('%s\n %d\n', 'Part of non-zero values in the true parameter vector:', nnz(theta)/(d*L*L));
+    %fprintf('%s\n', 'First values of the parameter vector:');
+    %disp(theta(1:2*d,1:2*d));
     % Putting half of the true parameter vector values below 0.
     theta0 = normrnd(0, 1, 1, L);
     % Generate time series.
@@ -59,9 +65,7 @@ function [time_horizon, N, L, theta, theta0] = generate_series(L_rows, L_columns
         X = time_horizon((s-d):(s-1),:);
         X = reshape(X.',1,[]);
         for l = 1:L
-            % Probability of the event.
             p = sigmoid(theta0(l) + dot(X, theta(l,:)));
-            % Bernouilli event.
             time_horizon(s,l) = Bernouilli_draw(p);
             % Calculating the 2-norms.
             norm_probability(1,s) = norm_probability(1,s) + p^2;
@@ -82,7 +86,7 @@ function [time_horizon, N, L, theta, theta0] = generate_series(L_rows, L_columns
     plot(time, norm_X);
     xlabel('Time t');
     ylabel('2-norm');
-    legend('base probabilites at time t : p0^{1,...,L}_t','probabilities at time t : p^{1,...,L}_t','events at time t : y^{1,...,L}_t');
+    legend('base probability','probability at time t','event at time t');
     saveas(gcf, 'time_horizon_vs_initial_intensities', 'png');
     hold off;
     color_plot(time_horizon(d*d,:),time_horizon(d*d+1,:), L_rows);
