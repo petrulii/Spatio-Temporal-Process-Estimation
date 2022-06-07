@@ -10,7 +10,7 @@ function horizon_tests
     row = 10;
     col = row;
     % Determine density.
-    density = 0.01;
+    density = 0.1;
     % Generating Bernouilli time series of N time instances and L locations.
     [time_horizon, N, L, true_theta, true_b] = generate_series(row, col, d, periods, density);
 end
@@ -41,8 +41,9 @@ function [time_horizon, N, L, theta, theta0] = generate_series(L_rows, L_columns
     time_horizon = zeros(N,L);
     % Create a random Bernoulli process grid at the initial time strech.
     for s = (1:d)
-        x = sprand(L, 1, density);
-        x(x>0) = 1;
+        x = normrnd(0, 1, 1, L);
+        x(x>=0) = 1;
+        x(x<0) = 0;
         norm_X(1,s) = norm_X(1,s) + norm(x,2);
         for l = 1:L
             time_horizon(s,:) = x;
@@ -50,6 +51,7 @@ function [time_horizon, N, L, theta, theta0] = generate_series(L_rows, L_columns
     end
     % Initialising the sparse true parameter vector and the initial probability.
     theta = sprandn(L, d*L, density);
+    disp(size(theta));
     fprintf('%s\n %d\n', 'Part of non-zero values in the true parameter vector:', nnz(theta)/(d*L*L));
     % Putting half of the true parameter vector values below 0.
     theta0 = normrnd(0, 1, 1, L);
@@ -82,7 +84,7 @@ function [time_horizon, N, L, theta, theta0] = generate_series(L_rows, L_columns
     plot(time, norm_X);
     xlabel('Time t');
     ylabel('2-norm');
-    legend('base probabilites at time t : p0^{1,...,L}_t','probabilities at time t : p^{1,...,L}_t','events at time t : y^{1,...,L}_t');
+    legend('base probability vector at time t','true probability vector at time t','event vector at time t');
     saveas(gcf, 'time_horizon_vs_initial_intensities', 'png');
     hold off;
     color_plot(time_horizon(d*d,:),time_horizon(d*d+1,:), L_rows);
