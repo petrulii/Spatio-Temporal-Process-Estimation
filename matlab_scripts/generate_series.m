@@ -1,10 +1,9 @@
 % Generate time series with d*periods+1 time steps.
-function [time_horizon, N, L, theta, theta0, init_grids] = generate_series(rows, cols, d, periods, density)
+function [time_horizon, N, L, theta, theta0] = generate_series(rows, cols, d, periods, density)
     % Number of locations.
     L = rows*cols;
     N = d + d*periods;
     % Initialiazing the time horizon.
-    init_grids = zeros(d,L);
     time_horizon = zeros(N,L);
     % Create a random Bernoulli process grid at the initial time strech.
     for s = (1:d)

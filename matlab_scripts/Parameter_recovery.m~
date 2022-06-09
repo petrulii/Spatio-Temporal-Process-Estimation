@@ -33,18 +33,21 @@ function Parameter_recovery
     lbd = 1;
     
     % Generating Bernouilli time series of N+1 time instances and L locations.
-    [time_horizon, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, density);
+    [time_horizon, N, L, true_theta, true_theta0, init_grids] = generate_series(row, col, d, periods, density);
 
     % Regularization hyper-parameter.
-    for lbd = 0.001
+    for lbd = 0.001%all_lambdas
         % LGR+LASSO : Logistic regression with lasso.
-        [theta, theta0] = logistic(time_horizon, N, L, d, lbd);
+        [theta, theta0] = linear(time_horizon, N, L, d, lbd);
         % Generate a prediction and compare with groud truth.
         [err_log_l1, z_log_l1, t_n_log_l1, t_ms_log_l1] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @sigmoid);
         zer_log_l1 = [zer_log_l1 z_log_l1];
         error_log_l1 = [error_log_l1 err_log_l1];
         theta_norm_log_l1 = [theta_norm_log_l1 t_n_log_l1];
         theta_mse_log_l1 = [theta_mse_log_l1 t_ms_log_l1];
+        
+        location_plot(L, N, d, true_theta, true_theta0, theta, theta0, 3, time_horizon(1:d,:));
+        return;
         
         % LNR+LASSO : Linear regression with lasso.
         [theta, theta0] = linear(time_horizon, N, L, d, lbd);
