@@ -8,44 +8,29 @@ function Parameter_recovery
     row = 4;
     col = row;
     % Density of the true parameter vector.
-    density = 0.1;
+    density = 0.3;
     % Lists for plotting
     error_log_l1 = [];
     error_lin_l1 = [];
-    error_clin_l1 = [];
     zer_log_l1 = [];
     zer_lin_l1 = [];
-    zer_clin_l1 = [];
     theta_norm_log_l1 = [];
     theta_norm_lin_l1 = [];
-    theta_norm_clin_l1 = [];
     theta_mse_log_l1 = [];
     theta_mse_lin_l1 = [];
-    theta_mse_clin_l1 = [];
     % Memory depths.
     all_depths = linspace(3,6,4);
-    all_lambdas = logspace(-6,1,8);
+    all_lambdas = logspace(-6,3,22);
     all_dens = linspace(0.1,0.4,4);
-    all_periods = linspace(2,16,8);
     % Memeory depth.
     d = 3;
-    % Reguralization parameter.
-    lbd = 1;
-    
-    % Generating Bernouilli time series of N+1 time instances and L locations.
-    [time_horizon, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, density);
 
     % Regularization hyper-parameter.
-    for lbd = 0.001
-        % LGR+LASSO : Logistic regression with lasso.
-        [theta, theta0] = logistic(time_horizon, N, L, d, lbd);
-        % Generate a prediction and compare with groud truth.
-        [err_log_l1, z_log_l1, t_n_log_l1, t_ms_log_l1] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @sigmoid);
-        zer_log_l1 = [zer_log_l1 z_log_l1];
-        error_log_l1 = [error_log_l1 err_log_l1];
-        theta_norm_log_l1 = [theta_norm_log_l1 t_n_log_l1];
-        theta_mse_log_l1 = [theta_mse_log_l1 t_ms_log_l1];
-        
+    for lbd = all_lambdas
+    
+        % Generating Bernouilli time series of N+1 time instances and L locations.
+        [time_horizon, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, density);
+    
         % LNR+LASSO : Linear regression with lasso.
         [theta, theta0] = linear(time_horizon, N, L, d, lbd);
         % Generate a prediction and compare with groud truth.
@@ -55,18 +40,18 @@ function Parameter_recovery
         theta_norm_lin_l1 = [theta_norm_lin_l1 t_n_lin_l1];
         theta_mse_lin_l1 = [theta_mse_lin_l1 t_ms_lin_l1];
         
-        % LNR+CONSTRAINTS : Linear regression with constraints.
-        [theta, theta0] = linear_constraints(time_horizon, N, L, d, lbd);
+        % LGR+LASSO : Logistic regression with lasso.
+        [theta, theta0] = logistic(time_horizon, N, L, d, lbd);
         % Generate a prediction and compare with groud truth.
-        [err_clin_l1, z_clin_l1, t_n_clin_l1, t_ms_clin_l1] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @identity);
-        zer_clin_l1 = [zer_clin_l1 z_clin_l1];
-        error_clin_l1 = [error_clin_l1 err_clin_l1];
-        theta_norm_clin_l1 = [theta_norm_clin_l1 t_n_clin_l1];
-        theta_mse_clin_l1 = [theta_mse_clin_l1 t_ms_clin_l1];
+        [err_log_l1, z_log_l1, t_n_log_l1, t_ms_log_l1] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @sigmoid);
+        zer_log_l1 = [zer_log_l1 z_log_l1];
+        error_log_l1 = [error_log_l1 err_log_l1];
+        theta_norm_log_l1 = [theta_norm_log_l1 t_n_log_l1];
+        theta_mse_log_l1 = [theta_mse_log_l1 t_ms_log_l1];
         
     end
     
-    result_plot(log(all_lambdas), zer_log_l1, error_log_l1, theta_norm_log_l1, theta_mse_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, theta_mse_lin_l1, zer_clin_l1, error_clin_l1, theta_norm_clin_l1, theta_mse_clin_l1);
+    result_plot(all_lambdas, zer_log_l1, error_log_l1, theta_norm_log_l1, theta_mse_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, theta_mse_lin_l1);
 end
 
 % Maximum likelihood estimation.
@@ -111,34 +96,6 @@ function [theta, init_intens] = linear(time_horizon, N, L, d, lambda)
                     b = init_intens(l);
                     % Distance.
                     obj = obj + (y-(dot(X,a)+b))^2;
-                end
-            end
-            obj = obj / (N*L) + lambda * sum(sum(abs(theta)));
-            minimize(obj);
-        cvx_end
-        % Transform small values of theta to 0s.
-        theta(theta>-0.0001 & theta<0.0001) = 0;
-end
-
-% Least-squares estimation.
-function [theta, init_intens] = linear_constraints(time_horizon, N, L, d, lambda)
-        cvx_begin
-            variable theta(L, d*L);
-            variable init_intens(L);
-            obj = 0;
-            for s = d:(N-1)
-                X = time_horizon((s-d+1):s,:);
-                X = reshape(X.',1,[]);
-                % For each location in the 2-D grid.
-                for l = 1:L
-                    y = time_horizon(s+1,l);
-                    a = theta(l,:);
-                    b = init_intens(l);
-                    % Distance.
-                    obj = obj + (y-(dot(X,a)+b))^2;
-                    subject to
-                        dot(X,a)+b <= 1;
-                        dot(X,a)+b >= 0;
                 end
             end
             obj = obj / (N*L) + lambda * sum(sum(abs(theta)));
