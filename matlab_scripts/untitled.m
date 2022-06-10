@@ -1,3 +1,3 @@
-A = [-1 0 -1; 1 -1 0];
-disp(sum(sum(abs(A))));
-disp(sum(sum(abs(A))));
+A = [-2 0 -2; 2 2 0];
+a = reshape(A.',1,[]);
+disp(norm(A,2));

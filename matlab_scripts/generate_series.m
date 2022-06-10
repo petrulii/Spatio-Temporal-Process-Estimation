@@ -1,6 +1,6 @@
 % Generate time series with d*periods+1 time steps.
 function [time_horizon, N, L, theta, theta0] = generate_series(rows, cols, d, periods, density)
-    sd = 2;
+    sd = 3;
     % Number of locations.
     L = rows*cols;
     N = d + d*periods;
@@ -16,8 +16,9 @@ function [time_horizon, N, L, theta, theta0] = generate_series(rows, cols, d, pe
         end
     end
     % Initialising the sparse true parameter vector and the initial probability.
-    theta = sprandn(L, d*L, density);
-    theta(x~=0) = theta(x~=0)*sd;
+    theta = sprandn(1, L*d*L, density);
+    theta = theta*sd;
+    theta = reshape(theta, L, d*L);
     %theta = zeros(L, d*L);
     % Cluster-inducing parameter vector.
     %{

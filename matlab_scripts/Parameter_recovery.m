@@ -1,14 +1,14 @@
 % Main function.
 function Parameter_recovery
     % Set the random seed.
-    rng(0);
+    rng(1);
     % The length of the time horizon is d*periods+1.
-    periods = 15;
+    periods = 16;
     % Dimensions of 2-D space grid.
     row = 4;
     col = row;
     % Density of the true parameter vector.
-    density = 0.3;
+    density = 0.35;
     % Lists for plotting
     error_log_l1 = [];
     error_lin_l1 = [];
@@ -20,25 +20,16 @@ function Parameter_recovery
     theta_mse_lin_l1 = [];
     % Memory depths.
     all_depths = linspace(3,6,4);
-    all_lambdas = logspace(-6,3,22);
+    all_lambdas = logspace(-4,4,100);
     all_dens = linspace(0.1,0.4,4);
     % Memeory depth.
     d = 3;
 
     % Regularization hyper-parameter.
-    for lbd = all_lambdas
-    
+    for lbd = 0
+        
         % Generating Bernouilli time series of N+1 time instances and L locations.
         [time_horizon, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, density);
-    
-        % LNR+LASSO : Linear regression with lasso.
-        [theta, theta0] = linear(time_horizon, N, L, d, lbd);
-        % Generate a prediction and compare with groud truth.
-        [err_lin_l1, z_lin_l1, t_n_lin_l1, t_ms_lin_l1] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @identity);
-        zer_lin_l1 = [zer_lin_l1 z_lin_l1];
-        error_lin_l1 = [error_lin_l1 err_lin_l1];
-        theta_norm_lin_l1 = [theta_norm_lin_l1 t_n_lin_l1];
-        theta_mse_lin_l1 = [theta_mse_lin_l1 t_ms_lin_l1];
         
         % LGR+LASSO : Logistic regression with lasso.
         [theta, theta0] = logistic(time_horizon, N, L, d, lbd);
@@ -48,6 +39,18 @@ function Parameter_recovery
         error_log_l1 = [error_log_l1 err_log_l1];
         theta_norm_log_l1 = [theta_norm_log_l1 t_n_log_l1];
         theta_mse_log_l1 = [theta_mse_log_l1 t_ms_log_l1];
+        
+        location_plot(L, N, d, true_theta, true_theta0, theta, theta0, 2, time_horizon(1:d,:));
+        return;
+    
+        % LNR+LASSO : Linear regression with lasso.
+        [theta, theta0] = linear(time_horizon, N, L, d, lbd);
+        % Generate a prediction and compare with groud truth.
+        [err_lin_l1, z_lin_l1, t_n_lin_l1, t_ms_lin_l1] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @identity);
+        zer_lin_l1 = [zer_lin_l1 z_lin_l1];
+        error_lin_l1 = [error_lin_l1 err_lin_l1];
+        theta_norm_lin_l1 = [theta_norm_lin_l1 t_n_lin_l1];
+        theta_mse_lin_l1 = [theta_mse_lin_l1 t_ms_lin_l1];
         
     end
     
@@ -73,7 +76,7 @@ function [theta, init_intens] = logistic(time_horizon, N, L, d, lambda)
                     obj = obj + (y*(dot(X,a)+b) - log_sum_exp([0; (dot(X,a)+b)]));
                 end
             end
-            obj = obj - lambda * sum(sum(abs(theta)));
+            obj = obj - lambda * (sum(sum(abs(theta))) + sum(abs(init_intens)));
             maximize(obj);
         cvx_end;
         % Transform small values of theta to 0s.
@@ -98,7 +101,7 @@ function [theta, init_intens] = linear(time_horizon, N, L, d, lambda)
                     obj = obj + (y-(dot(X,a)+b))^2;
                 end
             end
-            obj = obj / (N*L) + lambda * sum(sum(abs(theta)));
+            obj = obj / (N*L) + lambda * (sum(sum(abs(theta))) + sum(abs(init_intens)));
             minimize(obj);
         cvx_end
         % Transform small values of theta to 0s.
