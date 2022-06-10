@@ -9,57 +9,58 @@ function Parameter_recovery
     col = row;
     % Density of the true parameter vector.
     density = 0.35;
-    % Lists for plotting
-    error_log_l1 = [];
-    error_lin_l1 = [];
-    zer_log_l1 = [];
-    zer_lin_l1 = [];
-    theta_norm_log_l1 = [];
-    theta_norm_lin_l1 = [];
-    theta_mse_log_l1 = [];
-    theta_mse_lin_l1 = [];
     % Memory depths.
     all_depths = linspace(3,6,4);
-    all_lambdas = logspace(-4,4,100);
+    all_lambdas = logspace(-4,4,2);
+    len_lambdas = length(all_lambdas);
     all_dens = linspace(0.1,0.4,4);
     % Memeory depth.
     d = 3;
+    % Lists for plotting
+    iterations = 2;
+    error_log_l1 = zeros(iterations,len_lambdas);
+    error_lin_l1 = zeros(iterations,len_lambdas);
+    zer_log_l1 = zeros(iterations,len_lambdas);
+    zer_lin_l1 = zeros(iterations,len_lambdas);
+    theta_norm_log_l1 = zeros(iterations,len_lambdas);
+    theta_norm_lin_l1 = zeros(iterations,len_lambdas);
 
-    % Regularization hyper-parameter.
-    for lbd = 0
-        
-        % Generating Bernouilli time series of N+1 time instances and L locations.
-        [time_horizon, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, density);
-        
-        % LGR+LASSO : Logistic regression with lasso.
-        [theta, theta0] = logistic(time_horizon, N, L, d, lbd);
-        % Generate a prediction and compare with groud truth.
-        [err_log_l1, z_log_l1, t_n_log_l1, t_ms_log_l1] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @sigmoid);
-        zer_log_l1 = [zer_log_l1 z_log_l1];
-        error_log_l1 = [error_log_l1 err_log_l1];
-        theta_norm_log_l1 = [theta_norm_log_l1 t_n_log_l1];
-        theta_mse_log_l1 = [theta_mse_log_l1 t_ms_log_l1];
-        
-        location_plot(L, N, d, true_theta, true_theta0, theta, theta0, 2, time_horizon(1:d,:));
-        return;
-    
-        % LNR+LASSO : Linear regression with lasso.
-        [theta, theta0] = linear(time_horizon, N, L, d, lbd);
-        % Generate a prediction and compare with groud truth.
-        [err_lin_l1, z_lin_l1, t_n_lin_l1, t_ms_lin_l1] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @identity);
-        zer_lin_l1 = [zer_lin_l1 z_lin_l1];
-        error_lin_l1 = [error_lin_l1 err_lin_l1];
-        theta_norm_lin_l1 = [theta_norm_lin_l1 t_n_lin_l1];
-        theta_mse_lin_l1 = [theta_mse_lin_l1 t_ms_lin_l1];
-        
+    for i = 1:iterations
+        % Regularization hyper-parameter.
+        for j = 1:len_lambdas
+
+            lbd = all_lambdas(j);
+            % Generating Bernouilli time series of N+1 time instances and L locations.
+            [time_horizon, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, density);
+
+            % LGR+LASSO : Logistic regression with lasso.
+            [theta, theta0] = logistic(time_horizon, N, L, d, lbd);
+            % Generate a prediction and compare with groud truth.
+            [err_log_l1, z_log_l1, t_n_log_l1] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @sigmoid);
+            zer_log_l1(i,j) = z_log_l1;
+            error_log_l1(i,j) = err_log_l1;
+            theta_norm_log_l1(i,j) = t_n_log_l1;
+
+            %location_plot(L, N, d, true_theta, true_theta0, theta, theta0, 2, time_horizon(1:d,:));
+            %return;
+
+            % LNR+LASSO : Linear regression with lasso.
+            [theta, theta0] = linear(time_horizon, N, L, d, lbd);
+            % Generate a prediction and compare with groud truth.
+            [err_lin_l1, z_lin_l1, t_n_lin_l1] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @identity);
+            zer_lin_l1(i,j) = z_lin_l1;
+            error_lin_l1(i,j) = err_lin_l1;
+            theta_norm_lin_l1(i,j) = t_n_lin_l1;
+
+        end
     end
     
-    result_plot(all_lambdas, zer_log_l1, error_log_l1, theta_norm_log_l1, theta_mse_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, theta_mse_lin_l1);
+    result_plot(all_lambdas, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, iterations);
 end
 
 % Maximum likelihood estimation.
 function [theta, init_intens] = logistic(time_horizon, N, L, d, lambda)
-        %cvx_solver mosek;
+        cvx_solver mosek;
         cvx_begin;
             variable theta(L, d*L);
             variable init_intens(L);
@@ -109,7 +110,7 @@ function [theta, init_intens] = linear(time_horizon, N, L, d, lambda)
 end
 
 % Prediction for time series of 2-D Bernouilli events.
-function [err, zer, dist, theta_mse] = predict(X, y, L, d, true_theta, theta, true_theta0, theta0, rows, columns, activation, heatmap)
+function [err, zer, dist] = predict(X, y, L, d, true_theta, theta, true_theta0, theta0, rows, columns, activation, heatmap)
     fprintf('%s\n', 'First values of estimated theta:');
     disp(theta(1:2,1:8));
     fprintf('%s\n', 'First values of true theta:');
@@ -138,18 +139,14 @@ function [err, zer, dist, theta_mse] = predict(X, y, L, d, true_theta, theta, tr
     theta = reshape(theta.',1,[]);
     theta = [theta transpose(theta0)];
     dist = sqrt(sum((true_theta-theta).^2));
-    theta_mse = immse(true_theta, theta);
     zer = nnz(theta);
     % Null values in the estimated theta.
     zer = zer/(d*L*L);
     fprintf('%s %d\n', 'length of estimated theta:', length(theta));
-    fprintf('%s %d\n', 'mean of estimated theta:', mean(theta));
-    fprintf('%s %d\n', '2-norm of estimated theta:', norm(theta,2));
     fprintf('%s %d\n', 'length of true theta:', length(true_theta));
     fprintf('%s %d\n', 'mean of true theta:', mean(true_theta));
     fprintf('%s %d\n', '2-norm of true theta:', norm(true_theta,2));
     fprintf('%s %d\n', '2-norm of estimation difference:', dist);
-    fprintf('%s %d\n', 'MSE of estimation difference:', immse(theta, true_theta));
 end
 
 % Identity activation function.

@@ -1,6 +1,6 @@
 % Generate time series with d*periods+1 time steps.
 function [time_horizon, N, L, theta, theta0] = generate_series(rows, cols, d, periods, density)
-    sd = 3;
+    sd = 4;
     % Number of locations.
     L = rows*cols;
     N = d + d*periods;
