@@ -10,10 +10,8 @@ function Parameter_recovery
     % Density of the true parameter vector.
     density = 0.35;
     % Memory depths.
-    all_depths = linspace(3,6,4);
-    all_lambdas = logspace(-4,4,2);
+    all_lambdas = logspace(-4,4,3);
     len_lambdas = length(all_lambdas);
-    all_dens = linspace(0.1,0.4,4);
     % Memeory depth.
     d = 3;
     % Lists for plotting
@@ -31,23 +29,23 @@ function Parameter_recovery
 
             lbd = all_lambdas(j);
             % Generating Bernouilli time series of N+1 time instances and L locations.
-            [time_horizon, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, density);
+            [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, density, 'random');
 
             % LGR+LASSO : Logistic regression with lasso.
-            [theta, theta0] = logistic(time_horizon, N, L, d, lbd);
+            [theta, theta0] = logistic(time_series, N, L, d, lbd);
             % Generate a prediction and compare with groud truth.
-            [err_log_l1, z_log_l1, t_n_log_l1] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @sigmoid);
+            [err_log_l1, z_log_l1, t_n_log_l1] = predict(time_series((N-d)+1:N,:), time_series(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @sigmoid);
             zer_log_l1(i,j) = z_log_l1;
             error_log_l1(i,j) = err_log_l1;
             theta_norm_log_l1(i,j) = t_n_log_l1;
 
-            %location_plot(L, N, d, true_theta, true_theta0, theta, theta0, 2, time_horizon(1:d,:));
+            %location_plot(L, N, d, true_theta, true_theta0, theta, theta0, 2, time_series(1:d,:));
             %return;
 
             % LNR+LASSO : Linear regression with lasso.
-            [theta, theta0] = linear(time_horizon, N, L, d, lbd);
+            [theta, theta0] = linear(time_series, N, L, d, lbd);
             % Generate a prediction and compare with groud truth.
-            [err_lin_l1, z_lin_l1, t_n_lin_l1] = predict(time_horizon((N-d)+1:N,:), time_horizon(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @identity);
+            [err_lin_l1, z_lin_l1, t_n_lin_l1] = predict(time_series((N-d)+1:N,:), time_series(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @identity);
             zer_lin_l1(i,j) = z_lin_l1;
             error_lin_l1(i,j) = err_lin_l1;
             theta_norm_lin_l1(i,j) = t_n_lin_l1;
@@ -55,22 +53,22 @@ function Parameter_recovery
         end
     end
     
-    result_plot(all_lambdas, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, iterations);
+    Parameter_recovery_plot(all_lambdas, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, iterations);
 end
 
 % Maximum likelihood estimation.
-function [theta, init_intens] = logistic(time_horizon, N, L, d, lambda)
-        cvx_solver mosek;
+function [theta, init_intens] = logistic(time_series, N, L, d, lambda)
+        %cvx_solver mosek;
         cvx_begin;
             variable theta(L, d*L);
             variable init_intens(L);
             obj = 0;
             for s = d:(N-1)
-                X = time_horizon((s-d+1):s,:);
+                X = time_series((s-d+1):s,:);
                 X = reshape(X.',1,[]);
                 % For each location in the 2-D grid.
                 for l = 1:L
-                    y = time_horizon(s+1,l);
+                    y = time_series(s+1,l);
                     a = theta(l,:);
                     b = init_intens(l);
                     % Log-likelihood with L1 penalty.
@@ -85,17 +83,17 @@ function [theta, init_intens] = logistic(time_horizon, N, L, d, lambda)
 end
 
 % Least-squares estimation.
-function [theta, init_intens] = linear(time_horizon, N, L, d, lambda)
+function [theta, init_intens] = linear(time_series, N, L, d, lambda)
         cvx_begin
             variable theta(L, d*L);
             variable init_intens(L);
             obj = 0;
             for s = d:(N-1)
-                X = time_horizon((s-d+1):s,:);
+                X = time_series((s-d+1):s,:);
                 X = reshape(X.',1,[]);
                 % For each location in the 2-D grid.
                 for l = 1:L
-                    y = time_horizon(s+1,l);
+                    y = time_series(s+1,l);
                     a = theta(l,:);
                     b = init_intens(l);
                     % Distance.

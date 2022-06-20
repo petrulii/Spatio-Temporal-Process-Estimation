@@ -1,4 +1,4 @@
-function [] = result_plot(x, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, iterations)
+function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, iterations)
 
     f1 = figure('visible','on');
     hold on;
