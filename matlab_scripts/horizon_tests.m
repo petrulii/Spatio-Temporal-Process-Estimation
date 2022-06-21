@@ -7,12 +7,12 @@ function horizon_tests
     % The length of the time horizon is d*periods+1.
     periods = 50;
     % Dimensions of 2-D space at any time instance.
-    row = 10;
+    row = 40;
     col = row;
     % Determine density.
     density = 0.1;
     % Generating Bernouilli time series of N time instances and L locations.
-    [time_series, probabilities, N, L, true_theta, theta0] = generate_series(row, col, d, periods, density, 'gaussian');
+    [time_series, probabilities, N, L, true_theta, theta0] = generate_series(row, col, d, periods, density, 'disk');
     plot_one_location(L, N, d, true_theta, theta0, 3);
     color_plot_series(probabilities(1:15,:),15,row,col);
     color_plot_series(time_series(1:15,:),15,row,col);

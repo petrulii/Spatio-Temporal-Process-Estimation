@@ -3,9 +3,9 @@
 % horizon.
 function theta = Parameters_generate(L, d, rows, cols, type, density)
     theta = zeros(L, d*L);
+    dim = 5;
     switch type
         case 'laplace'
-            dim = 5;
             k = ones(dim,dim).*(0.125);
             k(2:4,2) = [-0.125 -0.125 -0.125];
             k(2:4,3) = [-0.125 -1 -0.125];
@@ -14,12 +14,11 @@ function theta = Parameters_generate(L, d, rows, cols, type, density)
         case 'gaussian'
             % Rotationally symmetric Gaussian lowpass filter.
             sigma = 3;
-            dim = 5;
             k = fspecial('gaussian', [dim dim], sigma);
             theta = filter_pass(rows, cols, d, theta, k, dim);
-        case '1-ball'
-            theta = ballL1(n);
-            theta = reshape(theta, L, d*L);
+        case 'disk'
+            k = fspecial('disk',2);
+            theta = filter_pass(rows, cols, d, theta, k, dim).*(-1);
         otherwise
             theta = sprandn(1, L*d*L, density);
             theta = reshape(theta, L, d*L);

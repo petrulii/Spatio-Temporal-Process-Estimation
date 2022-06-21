@@ -10,7 +10,7 @@ function Parameter_recovery
     % Density of the true parameter vector.
     density = 0.35;
     % Memory depths.
-    all_lambdas = logspace(-4,4,3);
+    all_lambdas = logspace(-4,2,2);
     len_lambdas = length(all_lambdas);
     % Memeory depth.
     d = 3;
@@ -38,9 +38,6 @@ function Parameter_recovery
             zer_log_l1(i,j) = z_log_l1;
             error_log_l1(i,j) = err_log_l1;
             theta_norm_log_l1(i,j) = t_n_log_l1;
-
-            %location_plot(L, N, d, true_theta, true_theta0, theta, theta0, 2, time_series(1:d,:));
-            %return;
 
             % LNR+LASSO : Linear regression with lasso.
             [theta, theta0] = linear(time_series, N, L, d, lbd);

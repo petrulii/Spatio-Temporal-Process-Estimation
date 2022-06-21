@@ -8,59 +8,54 @@ function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_lo
     plot(x, zer_log_l1_Mean);
     CIs = zer_log_l1_CI95+zer_log_l1_Mean;
     patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'b', 'EdgeColor','none', 'FaceAlpha',0.25)
+    %ciplot(CIs(1,:), CIs(2,:), x,'b');
     
     [zer_lin_l1_Mean, zer_lin_l1_CI95] = confidence_int(error_log_l1);
     plot(x, zer_lin_l1_Mean);
     CIs = zer_lin_l1_CI95+zer_lin_l1_Mean;
-    patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'y', 'EdgeColor','none', 'FaceAlpha',0.25)
+    patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'b', 'EdgeColor','none', 'FaceAlpha',0.25)
+    %ciplot(CIs(1,:), CIs(2,:), x,'y');
     
     title('Non-zeros in the estimated parameter vector \beta');
     xlabel('L1 penalty parameter \lambda');
     ylabel('Non-zero values in \beta');
-    legend('Maximum likelihood + L1','Maximum likelihood 95% CI','Least squares + L1','Least squares 95% CI');
-    saveas(f1, 'beta_non_zero_values', 'fig');
+    legend('Maximum likelihood + L1','Least squares + L1');
+    saveas(f1, 'zeros', 'fig');
     hold off;
     
-    % Prediction error plot.    
+    % Estimation error plot.    
     f2 = figure('visible','on');
     hold on;
-
+    
     [error_log_l1_Mean, error_log_l1_CI95] = confidence_int(error_log_l1);
-    plot(x, error_log_l1_Mean);
+    plot(x, error_log_l1_Mean);                                    % Plot Mean Of All Experiments
     CIs = error_log_l1_CI95+error_log_l1_Mean;
-    patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'b', 'EdgeColor','none', 'FaceAlpha',0.25)
+    ciplot(CIs(0), CIs(1), x)                                      % Plot 95% Confidence Intervals Of All Experiments
     
     [error_lin_l1_Mean, error_lin_l1_CI95] = confidence_int(error_lin_l1);
-    plot(x, error_lin_l1_Mean);
-    CIs = error_lin_l1_CI95+error_lin_l1_Mean;
-    patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'y', 'EdgeColor','none', 'FaceAlpha',0.25)
+    plot(x, error_lin_l1_Mean);                                    % Plot Mean Of All Experiments
+    plot(x, error_lin_l1_CI95+error_lin_l1_Mean);                  % Plot 95% Confidence Intervals Of All Experiments
     
     title('Prediction error of the probabilities at N+1');
     xlabel('L1 penalty parameter \lambda');
     ylabel('MSE of p_{N+1}^{*} and p_{N+1}');
-    legend('Maximum likelihood + L1','Maximum likelihood 95% CI','Least squares + L1','Least squares 95% CI');
-    saveas(f2, 'prediction_error_MSE', 'fig');
+    legend('Maximum likelihood + L1','Least squares + L1');
+    saveas(f2, 'MSE_prediction', 'fig');
     hold off;
     
-    % Estimation error plot.  
     f3 = figure('visible','on');
     hold on;
-    
-    [theta_norm_log_l1_Mean, theta_norm_log_l1_CI95] = confidence_int(theta_norm_log_l1);
-    plot(x, theta_norm_log_l1_Mean);
-    CIs = theta_norm_log_l1_CI95+theta_norm_log_l1_Mean;
-    patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'b', 'EdgeColor','none', 'FaceAlpha',0.25)
-    
-    [theta_norm_lin_l1_Mean, theta_norm_lin_l1_CI95] = confidence_int(theta_norm_lin_l1);
-    plot(x, theta_norm_lin_l1_Mean);
-    CIs = theta_norm_lin_l1_CI95+theta_norm_lin_l1_Mean;
-    patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'y', 'EdgeColor','none', 'FaceAlpha',0.25)
-    
+    [theta_norm_log_l1_Mean, theta_norm_log_l1_CI95] = confidence_int(error_log_l1);
+    plot(x, theta_norm_log_l1_Mean);                                % Plot Mean Of All Experiments
+    plot(x, theta_norm_log_l1_CI95+theta_norm_log_l1_Mean);         % Plot 95% Confidence Intervals Of All Experiments
+    [theta_norm_lin_l1_Mean, theta_norm_lin_l1_CI95] = confidence_int(error_log_l1);
+    plot(x, theta_norm_lin_l1_Mean);                                % Plot Mean Of All Experiments
+    plot(x, theta_norm_lin_l1_CI95+theta_norm_lin_l1_Mean);         % Plot 95% Confidence Intervals Of All Experiments
     title('Error of the estimation of \beta^*');
     xlabel('L1 penalty parameter \lambda');
     ylabel('2-norm of \beta^* - \beta');
-    legend('Maximum likelihood + L1','Maximum likelihood 95% CI','Least squares + L1','Least squares 95% CI');
-    saveas(f3, 'beta_estimation_error_2_norm', 'fig');
+    legend('Maximum likelihood + L1','Least squares + L1');
+    saveas(f3, 'theta_2norm', 'fig');
     hold off;
 end
 
