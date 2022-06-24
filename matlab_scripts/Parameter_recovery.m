@@ -1,21 +1,19 @@
 % Main function.
 function Parameter_recovery
     % Set the random seed.
-    rng(1);
+    %rng(1);
     % The length of the time horizon is d*periods+1.
-    periods = 16;
+    periods = 30;
     % Dimensions of 2-D space grid.
-    row = 4;
+    row = 6;
     col = row;
-    % Density of the true parameter vector.
-    density = 0.35;
     % Memory depths.
-    all_lambdas = logspace(-4,2,2);
+    all_lambdas = logspace(-4,4,20);
     len_lambdas = length(all_lambdas);
     % Memeory depth.
     d = 3;
     % Lists for plotting
-    iterations = 2;
+    iterations = 10;
     error_log_l1 = zeros(iterations,len_lambdas);
     error_lin_l1 = zeros(iterations,len_lambdas);
     zer_log_l1 = zeros(iterations,len_lambdas);
@@ -29,7 +27,9 @@ function Parameter_recovery
 
             lbd = all_lambdas(j);
             % Generating Bernouilli time series of N+1 time instances and L locations.
-            [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, density, 'random');
+            %radius = d;
+            %value = 1;
+            [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, 'operator', 0, 0);
 
             % LGR+LASSO : Logistic regression with lasso.
             [theta, theta0] = logistic(time_series, N, L, d, lbd);
@@ -50,12 +50,12 @@ function Parameter_recovery
         end
     end
     
-    Parameter_recovery_plot(all_lambdas, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, iterations);
+    Parameter_recovery_plot(all_lambdas, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1);
 end
 
 % Maximum likelihood estimation.
 function [theta, init_intens] = logistic(time_series, N, L, d, lambda)
-        %cvx_solver mosek;
+        cvx_solver mosek;
         cvx_begin;
             variable theta(L, d*L);
             variable init_intens(L);

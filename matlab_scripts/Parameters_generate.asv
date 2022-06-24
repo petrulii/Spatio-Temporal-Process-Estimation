@@ -4,7 +4,7 @@ function theta = Parameters_generate(L, d, rows, cols, type, radius, val)
         % The parameter vector is an operator of specified neighbourhood.
         case 'operator'
             center = val;
-            values = zeros(1,radius);
+            values = zeros(2,radius);
             for r=1:radius
                 if r<radius/2
                     values(r) = val;
@@ -12,9 +12,6 @@ function theta = Parameters_generate(L, d, rows, cols, type, radius, val)
                     values(r) = -val;
                 end
             end
-            % TODO: change this.
-            center = 0.8;
-            values = [1 -1.8];
             theta = operator_pass(rows, cols, d, center, values, length(values));
         % The parameter vector is a sobel-like operator constructed from coordinates.
         case 'sobel'

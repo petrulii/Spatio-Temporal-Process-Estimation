@@ -1,0 +1,32 @@
+function [] = test()
+    %rng(0);
+    s = 3;
+    % Draw one vector from a 2-ball.
+    alpha = ball_uniform(2, 1);
+    disp(alpha);
+    a1 = (alpha(1)-alpha(2))^s;
+    disp(a1);
+    a2 = exp(alpha(1)-alpha(2));
+    disp(a2);
+    radius = 2;
+    theta = zeros(L, d*L);
+    theta = sobel_operator(rows, cols, d, theta, radius);
+end
+
+% Creates a parameter vector where a discrete laplace kernel is positioned
+% at the center of every location at all time instances in the memory
+% horizon.
+function [theta] = sobel_operator(rows, cols, d, theta, radius)
+    for i = 1:rows
+        for j = 1:cols
+            temp = ones(rows, cols).*initial;
+            temp(i,j)=center;
+            for r=1:radius
+                n = count_neighbours(i,j,rows,cols,r);
+                temp = assign_values(i,j,rows,cols,r,values(r)/n,temp);
+            end
+            temp = reshape(temp.', 1, []);
+            theta((i-1)*cols+j, :) = repmat(temp,1,d);
+        end
+    end
+end

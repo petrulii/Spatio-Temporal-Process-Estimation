@@ -1,23 +1,23 @@
 % Main function.
 function horizon_tests
     % Set the random seed.
-    %rng(0);
+    rng(0);
     % Memory depth.
     d = 3;
     % The length of the time horizon is d*periods+1.
-    periods = 30;
+    periods = 100;
     % Dimensions of 2-D space at any time instance.
-    row = 6;
+    row = 10;
     col = row;
     % Define the value for an operator used in parameter generation.
     radius = 2;
-    value = -0.5;
+    value = 0.05;
     % Generating Bernouilli time series of N time instances and L locations.
-    [time_series, probabilities, N, L, true_theta, theta0] = generate_series(row, col, d, periods, 'operator', radius, value);
+    [time_series, probabilities, N, L, true_theta, theta0] = generate_series(row, col, d, periods, 'sobel', radius, value);
     plot_one_location(L, N, d, true_theta, theta0, 1);
     plot_total_variation(N, probabilities, row, col);
-    color_plot_series(probabilities,60,row,col);
-    color_plot_series(time_series,60,row,col);
+    color_plot_series(probabilities,N,row,col);
+    color_plot_series(time_series,N,row,col);
 end
 
 function [] = plot_total_variation(N, series, row, col)
@@ -42,10 +42,12 @@ end
 
 function [] = color_plot_series(series,n,row,col)
     f = figure('visible','on');
-    f.Position = [100 100 1800 550];
+    f.Position = [100 100 1400 90];
     % Plotting the first plot
     for t = 1:n
-        sp = subplot(4,15,t);
+        row = int32(sqt(n));
+        x = int32(n/y);
+        sp = subplot(1,n,t);
         colormap(flipud(hot));
         grid = reshape(series(t,:),row,col)';
         imagesc(grid);

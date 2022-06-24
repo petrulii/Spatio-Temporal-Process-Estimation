@@ -1,4 +1,4 @@
-function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, iterations)
+function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1)
 
     % Non-zero value in the parameter vector plot.   
     f1 = figure('visible','on');
@@ -7,9 +7,9 @@ function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_lo
     [zer_log_l1_Mean, zer_log_l1_CI95] = confidence_int(zer_log_l1);
     plot(x, zer_log_l1_Mean);
     CIs = zer_log_l1_CI95+zer_log_l1_Mean;
-    patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'b', 'EdgeColor','none', 'FaceAlpha',0.25)
+    patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'b', 'EdgeColor','none', 'FaceAlpha',0.15)
     
-    [zer_lin_l1_Mean, zer_lin_l1_CI95] = confidence_int(error_log_l1);
+    [zer_lin_l1_Mean, zer_lin_l1_CI95] = confidence_int(zer_lin_l1);
     plot(x, zer_lin_l1_Mean);
     CIs = zer_lin_l1_CI95+zer_lin_l1_Mean;
     patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'y', 'EdgeColor','none', 'FaceAlpha',0.25)
@@ -28,7 +28,7 @@ function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_lo
     [error_log_l1_Mean, error_log_l1_CI95] = confidence_int(error_log_l1);
     plot(x, error_log_l1_Mean);
     CIs = error_log_l1_CI95+error_log_l1_Mean;
-    patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'b', 'EdgeColor','none', 'FaceAlpha',0.25)
+    patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'b', 'EdgeColor','none', 'FaceAlpha',0.15)
     
     [error_lin_l1_Mean, error_lin_l1_CI95] = confidence_int(error_lin_l1);
     plot(x, error_lin_l1_Mean);
@@ -49,7 +49,7 @@ function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_lo
     [theta_norm_log_l1_Mean, theta_norm_log_l1_CI95] = confidence_int(theta_norm_log_l1);
     plot(x, theta_norm_log_l1_Mean);
     CIs = theta_norm_log_l1_CI95+theta_norm_log_l1_Mean;
-    patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'b', 'EdgeColor','none', 'FaceAlpha',0.25)
+    patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'b', 'EdgeColor','none', 'FaceAlpha',0.15)
     
     [theta_norm_lin_l1_Mean, theta_norm_lin_l1_CI95] = confidence_int(theta_norm_lin_l1);
     plot(x, theta_norm_lin_l1_Mean);
