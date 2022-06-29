@@ -1,37 +1,42 @@
 % Main function.
 function Parameter_recovery
     % Set the random seed.
-    %rng(1);
+    rng(0);
     % The length of the time horizon is d*periods+1.
-    periods = 30;
+    %periods = 50;
+    all_periods = linspace(10, 500, 50);
+    len_periods = length(all_periods);
     % Dimensions of 2-D space grid.
     row = 6;
     col = row;
     % Memory depths.
-    all_lambdas = logspace(-4,4,20);
-    len_lambdas = length(all_lambdas);
+    %all_lambdas = logspace(-3,3,20);
+    %len_lambdas = length(all_lambdas);
+    lbd = 0;
     % Memeory depth.
     d = 3;
+    % Values used in parameter generation.
+    radius = 6;
+    values = [0.3];
     % Lists for plotting
     iterations = 10;
-    error_log_l1 = zeros(iterations,len_lambdas);
-    error_lin_l1 = zeros(iterations,len_lambdas);
-    zer_log_l1 = zeros(iterations,len_lambdas);
-    zer_lin_l1 = zeros(iterations,len_lambdas);
-    theta_norm_log_l1 = zeros(iterations,len_lambdas);
-    theta_norm_lin_l1 = zeros(iterations,len_lambdas);
+    error_log_l1 = zeros(iterations,len_periods);
+    error_lin_l1 = zeros(iterations,len_periods);
+    zer_log_l1 = zeros(iterations,len_periods);
+    zer_lin_l1 = zeros(iterations,len_periods);
+    theta_norm_log_l1 = zeros(iterations,len_periods);
+    theta_norm_lin_l1 = zeros(iterations,len_periods);
 
     for i = 1:iterations
         % Regularization hyper-parameter.
-        for j = 1:len_lambdas
+        for j = 1:len_periods
 
-            lbd = all_lambdas(j);
+            periods = all_periods(j);
+            %lbd = all_lambdas(j);
             % Generating Bernouilli time series of N+1 time instances and L locations.
-            %radius = d;
-            %value = 1;
-            [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, 'operator', 0, 0);
+            [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, 'random', radius, values);
 
-            % LGR+LASSO : Logistic regression with lasso.
+            % Maximum likelihood estimation with lasso.
             [theta, theta0] = logistic(time_series, N, L, d, lbd);
             % Generate a prediction and compare with groud truth.
             [err_log_l1, z_log_l1, t_n_log_l1] = predict(time_series((N-d)+1:N,:), time_series(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @sigmoid);
@@ -39,7 +44,7 @@ function Parameter_recovery
             error_log_l1(i,j) = err_log_l1;
             theta_norm_log_l1(i,j) = t_n_log_l1;
 
-            % LNR+LASSO : Linear regression with lasso.
+            % Least squares estimation with lasso.
             [theta, theta0] = linear(time_series, N, L, d, lbd);
             % Generate a prediction and compare with groud truth.
             [err_lin_l1, z_lin_l1, t_n_lin_l1] = predict(time_series((N-d)+1:N,:), time_series(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @identity);
@@ -49,8 +54,7 @@ function Parameter_recovery
 
         end
     end
-    
-    Parameter_recovery_plot(all_lambdas, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1);
+    Parameter_recovery_plot(all_periods, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1);
 end
 
 % Maximum likelihood estimation.
