@@ -15,10 +15,17 @@ function theta = Parameters_generate(L, d, rows, cols, type, radius, values)
             theta = ball_operator(rows, cols, d, density).*radius;
         case 'null'
             theta = zeros(L, d*L);
-        otherwise
+        case 'random'
             density = values(1);
             theta = sprandn(1, L*d*L, density);
             theta = reshape(theta, L, d*L);
+            fprintf('%s\n', 'Size of theta during generation:');
+            disp(size(theta));
+            fprintf('%s\n', 'First values of theta during generation:');
+            disp(theta(1,:));
+        otherwise
+            fprintf('%s\n', 'Wrong type specified for the parameter vector');
+            return;
     end
 end
 

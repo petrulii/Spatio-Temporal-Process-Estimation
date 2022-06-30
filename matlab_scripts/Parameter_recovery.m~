@@ -3,11 +3,11 @@ function Parameter_recovery
     % Set the random seed.
     rng(0);
     % The length of the time horizon is d*periods+1.
-    all_periods = [5 50 100 200];%linspace(10, 500, 50);
+    all_periods = [5 20 50];%linspace(10, 500, 50);
     len_periods = length(all_periods);
     %all_lambdas = logspace(-3,3,20);
     %len_lambdas = length(all_lambdas);
-    lbd = 0.05;
+    lbd = 0;
     % Dimensions of 2-D space grid.
     row = 3;
     col = row;
@@ -73,7 +73,7 @@ function [theta, init_intens] = logistic(time_series, N, L, d, lambda)
                     obj = obj + (y*(dot(X,a)+b) - log_sum_exp([0; (dot(X,a)+b)]));
                 end
             end
-            obj = obj/((N-d)*L) - lambda * (sum(sum(abs(theta))) + sum(abs(init_intens)));
+            %obj = obj - lambda * (sum(sum(abs(theta))) + sum(abs(init_intens)));
             maximize(obj);
         cvx_end;
         % Transform small values of theta to 0s.
@@ -98,7 +98,7 @@ function [theta, init_intens] = linear(time_series, N, L, d, lambda)
                     obj = obj + (y-(dot(X,a)+b))^2;
                 end
             end
-            obj = obj/((N-d)*L);% + lambda * (sum(sum(abs(theta))) + sum(abs(init_intens)));
+            %obj = obj / (N*L) + lambda * (sum(sum(abs(theta))) + sum(abs(init_intens)));
             minimize(obj);
         cvx_end
         % Transform small values of theta to 0s.
@@ -116,8 +116,8 @@ function [err, zer, dist] = predict(X, y, L, d, true_theta, theta, true_theta0, 
     fprintf('%s\n', 'Shape of y theta:');
     disp(size(y));
     prediction = zeros(1,L);
-    fprintf('%s\n', 'Shape of prediction theta:');
-    disp(size(prediction));
+    fprintf('%s\n', 'Shape of y theta:');
+    disp(size(y));
     
     % For each location in the 2-D grid.
     for l = 1:L
@@ -132,9 +132,11 @@ function [err, zer, dist] = predict(X, y, L, d, true_theta, theta, true_theta0, 
     true_theta = reshape(true_theta.',1,[]);
     true_theta = [true_theta true_theta0];
     theta = reshape(theta.',1,[]);
-    theta = [theta theta0];
+    theta = [theta transpose(theta0)];
     dist = sqrt(sum((true_theta-theta).^2));
-    zer = (nnz(theta))/(d*L*L+L);
+    zer = nnz(theta);
+    % Null values in the estimated theta.
+    zer = zer/(d*L*L);
     fprintf('%s %d\n', 'length of estimated theta:', length(theta));
     fprintf('%s %d\n', 'length of true theta:', length(true_theta));
     fprintf('%s %d\n', 'mean of true theta:', mean(true_theta));

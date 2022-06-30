@@ -3,17 +3,17 @@ function horizon_tests
     % Set the random seed.
     rng(0);
     % Memory depth.
-    d = 3;
+    d = 1;
     % The length of the time horizon is d*periods+1.
-    periods = 50;
+    periods = 60;
     % Dimensions of 2-D space at any time instance.
-    row = 6;
+    row = 3;
     col = row;
     % Define the value for an operator used in parameter generation.
-    radius = 6;
-    values = [0.3];
+    radius = 1;
+    values = [1 -1];
     % Generating Bernouilli time series of N time instances and L locations.
-    [time_series, probabilities, N, L, true_theta, theta0] = generate_series(row, col, d, periods, 'd-ball', radius, values);
+    [time_series, probabilities, N, L, true_theta, theta0] = generate_series(row, col, d, periods, 'operator', radius, values);
     plot_one_location(L, N, d, true_theta, theta0, 1);
     plot_total_variation(N, probabilities, row, col);
     color_plot_series(probabilities,60,row,col);

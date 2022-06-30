@@ -25,12 +25,6 @@ function [time_series, probabilities, N, L, theta, theta0] = generate_series(row
     % Initialising the sparse true parameter vector and the initial probability.
     theta = Parameters_generate(L, d, rows, cols, type, radius, value);
     fprintf('%s\n %d\n', 'Part of non-zero values in the true parameter vector:', nnz(theta)/(d*L*L));
-    %fprintf('%s\n %d\n', '2-norm of the true parameter vector:', norm(theta,2));
-    theta_display = theta(3, 1:L);
-    theta_display = reshape(theta_display, rows, cols);
-    fprintf('%s\n %d\n', 'First values of the true parameter vector:');
-    disp(theta_display);
-    disp(theta(3, 1:L));
     theta0 = normrnd(0,1,1,L);
     % Generate time series.
     for s = (d+1):(N+1)
