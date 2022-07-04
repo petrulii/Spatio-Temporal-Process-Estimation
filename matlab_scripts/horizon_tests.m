@@ -3,11 +3,11 @@ function horizon_tests
     % Set the random seed.
     rng(0);
     % Memory depth.
-    d = 1;
+    d = 2;
     % The length of the time horizon is d*periods+1.
     periods = 60;
     % Dimensions of 2-D space at any time instance.
-    row = 3;
+    row = 5;
     col = row;
     % Define the value for an operator used in parameter generation.
     radius = 1;

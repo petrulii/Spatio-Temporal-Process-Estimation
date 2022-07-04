@@ -1,14 +1,15 @@
 % Main function.
-function Parameter_recovery
+function Parameter_recovery_approx
     % Set the random seed.
     rng(0);
     % The length of the time horizon is d*periods+1.
-    all_periods = [5 25 50 100 200 400 800 1000 1200];%linspace(10, 500, 50);
+    all_periods = [5 10 20];% 50 100 200 400 800];
     len_periods = length(all_periods);
     %all_lambdas = logspace(-3,3,20);
     %len_lambdas = length(all_lambdas);
+    lbd = 0.0005;
     % Dimensions of 2-D space grid.
-    row = 5;
+    row = 4;
     col = row;
     % Memeory depth.
     d = 2;
@@ -16,7 +17,7 @@ function Parameter_recovery
     radius = 1;
     values = [1 -1];
     % Lists for plotting
-    iterations = 10;
+    iterations = 2;
     error_log_l1 = zeros(iterations,len_periods);
     error_lin_l1 = zeros(iterations,len_periods);
     zer_log_l1 = zeros(iterations,len_periods);
@@ -33,7 +34,6 @@ function Parameter_recovery
             % Generating Bernouilli time series of N+1 time instances and L locations.
             [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, 'operator', radius, values);
 
-            lbd = 0.0005;
             % Maximum likelihood estimation with lasso.
             [theta, theta0] = logistic(time_series, N, L, d, lbd);
             % Generate a prediction and compare with groud truth.
@@ -42,7 +42,6 @@ function Parameter_recovery
             error_log_l1(i,j) = err_log_l1;
             theta_norm_log_l1(i,j) = t_n_log_l1;
 
-            lbd = 0.01;
             % Least squares estimation with lasso.
             [theta, theta0] = linear(time_series, N, L, d, lbd);
             % Generate a prediction and compare with groud truth.
