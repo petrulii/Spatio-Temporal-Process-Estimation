@@ -11,8 +11,8 @@ function [time_series, probabilities, N, L, theta, theta0] = generate_series(row
         x = normrnd(0, 1, 1, L);
         x(x>=0) = 1;
         x(x<0) = 0;
-        %time_series(s,:) = x;  % Random initial grids.
-        
+        time_series(s,:) = x;  % Random initial grids.
+        %{
         for l = 1:L
             if l>(L/2)
                 time_series(s,l) = 0;
@@ -20,7 +20,7 @@ function [time_series, probabilities, N, L, theta, theta0] = generate_series(row
                 time_series(s,l) = 1;
             end
         end
-        
+        %}
     end
     % Initialising the sparse true parameter vector and the initial probability.
     theta = Parameters_generate(L, d, rows, cols, type, radius, value);
