@@ -1,6 +1,7 @@
 % Main function.
 function horizon_tests
     % Set the random seed.
+    box on;
     rng(0);
     % Memory depth.
     d = 3;
@@ -17,7 +18,7 @@ function horizon_tests
     plot_one_location(L, N, d, true_theta, theta0, 1);
     plot_total_variation(N, probabilities, row, col);
     color_plot_series(probabilities(4:44,:),40,row,col);
-    color_plot_series(time_series,60,row,col);
+    color_plot_series(time_series(4:44,:),40,row,col);
 end
 
 function [] = plot_total_variation(N, series, row, col)
@@ -41,12 +42,10 @@ function [] = plot_total_variation(N, series, row, col)
 end
 
 function [] = color_plot_series(series,n,row,col)
-    axis off;
     f = figure('visible','on');
-    f.Position = [100 100 1800 550];
     % Plotting the first plot
     for t = 1:n
-        sp = subplot(4,10,t);
+        subplot(4,10,t);
         colormap(flipud(hot));
         grid = reshape(series(t,:),row,col)';
         imagesc(grid);
@@ -54,7 +53,6 @@ function [] = color_plot_series(series,n,row,col)
         shading interp;
     end
     saveas(f, 'series_heatmaps', 'png');
-    axis on;
 end
 
 function [] = plot_one_location(L, N, d, theta, theta0, loc)

@@ -1,4 +1,4 @@
-function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1)
+function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, x_label)
 
     % Non-zero value in the parameter vector plot.
     f1 = figure('visible','on');
@@ -15,7 +15,7 @@ function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_lo
     patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'y', 'EdgeColor','none', 'FaceAlpha',0.25)
     
     title('Non-zeros in the estimated parameter vector \beta');
-    xlabel('L1 penalty parameter \lambda');
+    xlabel(x_label);
     ylabel('Non-zero values in \beta');
     legend('Maximum likelihood + L1','Maximum likelihood 95% CI','Least squares + L1','Least squares 95% CI');
     saveas(f1, 'beta_non_zero_values', 'fig');
@@ -36,7 +36,7 @@ function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_lo
     patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'y', 'EdgeColor','none', 'FaceAlpha',0.25)
     
     title('Prediction error of the probabilities at N+1');
-    xlabel('L1 penalty parameter \lambda');
+    xlabel(x_label);
     ylabel('MSE of p_{N+1}^{*} and p_{N+1}');
     legend('Maximum likelihood + L1','Maximum likelihood 95% CI','Least squares + L1','Least squares 95% CI');
     saveas(f2, 'prediction_error_MSE', 'fig');
@@ -57,7 +57,7 @@ function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_lo
     patch([x, fliplr(x)], [CIs(1,:) fliplr(CIs(2,:))], 'y', 'EdgeColor','none', 'FaceAlpha',0.25)
     
     title('Error of the estimation of \beta^*');
-    xlabel('L1 penalty parameter \lambda');
+    xlabel(x_label);
     ylabel('2-norm of \beta^* - \beta');
     legend('Maximum likelihood + L1','Maximum likelihood 95% CI','Least squares + L1','Least squares 95% CI');
     saveas(f3, 'beta_estimation_error_2_norm', 'fig');
