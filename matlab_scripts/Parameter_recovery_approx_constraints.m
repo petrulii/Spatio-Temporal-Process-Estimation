@@ -2,14 +2,14 @@
 function Parameter_recovery_approx_constraints
     % Set the random seed.
     rng(0);
-    cvx_solver mosek;
+    %cvx_solver mosek;
     % The length of the time horizon is d*periods+1.
-    all_periods = [5 10 50 100 200 600 1000];
+    all_periods = [5 10 20 30 40 50];
     len_periods = length(all_periods);
     %all_lambdas = logspace(-3,3,20);
     %len_lambdas = length(all_lambdas);
     % Dimensions of 2-D space grid.
-    row = 5;
+    row = 4;
     col = row;
     % Memeory depth.
     d = 3;
