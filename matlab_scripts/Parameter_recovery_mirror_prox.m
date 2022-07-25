@@ -18,10 +18,10 @@ function [] = Parameter_recovery_mirror_prox()
     y_init = zeros(1, 2);
     rate = 0.1;
     target_error = 100;
-    disp(mirror_prox(N, L, d, time_series, theta_init, theta0_init, y_init, rate, target_error));
+    mirror_prox(N, L, d, time_series, theta_init, theta0_init, y_init, rate, target_error);
 end
 
-function [x, y] = mirror_prox(N, L, d, time_series, theta_init, theta0_init, y_init, rate, target_error)
+function [theta, y] = mirror_prox(N, L, d, time_series, theta_init, theta0_init, y_init, rate, target_error)
     % Extragradient descent.
     % param x_init: initial strategy vector for player X
     % param y_init: initial strategy vector for player Y
@@ -29,10 +29,10 @@ function [x, y] = mirror_prox(N, L, d, time_series, theta_init, theta0_init, y_i
     theta = theta_init;
     theta0 = theta0_init;
     y = y_init;
+    kappa = 1;
     i = 0;
 
-    if i < 2%error > target_error
-        
+    if i < 2
         % Gradient step to go to an intermediate point.
         theta_grad = gradient_theta(N, L, d, time_series, theta, theta0, y);
         y_grad = gradient_y(N, L, d, time_series, theta, theta0, kappa);
@@ -43,7 +43,7 @@ function [x, y] = mirror_prox(N, L, d, time_series, theta_init, theta0_init, y_i
 
         % Use the gradient of the intermediate point to perform a gradient step.
         theta_grad_ = gradient_theta(N, L, d, time_series, theta, theta0, y_);
-        y_grad_ = gradient_y(N, L, d, time_series, theta_, theta0_, kappa);
+        y_grad_ = gradient_y(N, L, d, time_series, theta_, theta0, kappa);
         
         % Calculate x_i+1.
         theta = projection(theta - rate*(theta_grad_));
@@ -60,7 +60,7 @@ end
 
 % Gradient of the objective w.r.t. the parameter vector x of the process.
 function theta_grad = gradient_theta(N, L, d, time_series, theta, theta0, y)
-    theta_grad = y(1)*log_loss_gradient(N, L, d, time_series, theta, theta0) + y(2)*k*l1_penalty(theta, theta0);
+    theta_grad = y(1)*log_loss_gradient(N, L, d, time_series, theta, theta0) + y(2)*l1_penalty(theta, theta0);
 end
 
 % Logistic loss gradient w.r.t. the parameter vector.
@@ -75,9 +75,7 @@ function theta_log_loss_grad = log_loss_gradient(N, L, d, time_series, theta, th
             y = time_series(s+1,l);
             a = theta(l,:);
             b = theta0(l);
-            disp(size(X.'));
-            disp(size(((exp(X.'*a+b)/(exp(X.'*a+b)+1))-y)));
-            theta_log_loss_grad(l,:) = theta_log_loss_grad(l,:) + X.'*((exp(X.'*a+b)/(exp(X.'*a+b)+1))-y);
+            theta_log_loss_grad(l,:) = theta_log_loss_grad(l,:) + X.*((exp(dot(X,a)+b)/(exp(dot(X,a)+b)+1))-y);
         end
     end
 end
@@ -86,7 +84,7 @@ end
 function y_grad = gradient_y(N, L, d, time_series, theta, theta0, kappa)
     F0_theta = neg_log_loss(N, L, d, time_series, theta, theta0);
     disp(F0_theta);
-    y_grad = F0_theta + k*l1_penalty(theta, theta0) - kappa;
+    y_grad = neg_log_loss(N, L, d, time_series, theta, theta0) + l1_penalty(theta, theta0) - kappa;
 end
 
 % Negative cross-entropy loss.
