@@ -2,14 +2,14 @@
 function Parameter_recovery_approx
     % Set the random seed.
     rng(0);
-    %cvx_solver mosek;
+    cvx_solver mosek;
     % The length of the time horizon is d*periods+1.
-    all_periods = [2 10 20 40 80 100];
+    all_periods = [5 10 50 100 200 600 1000];
     len_periods = length(all_periods);
     %all_lambdas = logspace(-3,3,20);
     %len_lambdas = length(all_lambdas);
     % Dimensions of 2-D space grid.
-    row = 4;
+    row = 5;
     col = row;
     % Memeory depth.
     d = 3;
@@ -18,7 +18,6 @@ function Parameter_recovery_approx
     values = [1 -1];
     % Lists for plotting.
     iterations = 2;
-    all_N = zeros(1, len_periods);
     error_log_l1 = zeros(iterations,len_periods);
     error_lin_l1 = zeros(iterations,len_periods);
     zer_log_l1 = zeros(iterations,len_periods);
@@ -37,7 +36,6 @@ function Parameter_recovery_approx
             %lbd = all_lambdas(j);
             % Generating Bernouilli time series of N+1 time instances and L locations.
             [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, 'operator', radius, values);
-            all_N(j) = N;
 
             lbd = 0.0005;
             % Maximum likelihood estimation with lasso.
@@ -58,14 +56,14 @@ function Parameter_recovery_approx
             theta_norm_lin_l1(i,j) = t_n_lin_l1;
             
             % Displaying calculated results.
-            disp(all_N);
+            disp(all_periods);
             disp(theta_norm_log_l1);
             disp(error_log_l1);
             disp(theta_norm_lin_l1);
             disp(error_lin_l1);
         end
     end
-    Parameter_recovery_plot(all_N, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, 'N');
+    Parameter_recovery_plot(all_periods, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, 'N');
 end
 
 % Maximum likelihood estimation.
