@@ -99,15 +99,6 @@ function y = sigmoid(x)
     y = 1/(1+exp(-x));
 end
 
-% Binary log-it activation function.
-function y = binary_sigmoid(x)
-    if (1/(1+exp(-x))) >= 0.5
-        y = 1;
-    else
-        y = 0;
-    end
-end
-
 % Logistic loss gradient.
 function grad = log_loss_gradient(X, y, y_pred, l, L, d)
     % Gradient of the parameter vector w.r.t. log-loss.
