@@ -44,6 +44,4 @@ function [time_series, probabilities, N, L, theta, theta0] = generate_series(row
         end
     end
     fprintf('%s\n %d\n', 'Part of non-zero values in the time horizon:', nnz(time_series)/(N*L));
-    fprintf('%s\n', 'Last values of the time horizon:');
-    disp(time_series(N-2*d:N,L-8:L));
 end
