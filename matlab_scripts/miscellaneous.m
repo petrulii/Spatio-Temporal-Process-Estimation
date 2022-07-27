@@ -38,3 +38,36 @@ function theta = filter_pass(rows, cols, d, theta, k, dim)
         end
     end
 end
+
+% Identity function.
+function y = identity(x)
+    y = x;
+end
+
+% Mean squared error.
+function err = MSE(series, theta, N, L, d)
+    err = 0;
+    for s = d+1:N
+        X = series((s-d):(s-1),:);
+        X = reshape(X.',1,[]);
+        for l = 1:L
+            y = series(s,l);
+            y_pred = theta(l,:)*X.'+theta0;
+            err = err + mean(sumsqr(y - y_pred));
+        end
+    end
+    err = err/N;
+end
+
+% L1 norm of vector x of dimension n.
+function y = lasso(x, n, lambda)
+    y = x;
+    penalty = norm(y,1);
+    for i = 1:n
+        if y(i) < 0
+            y(i) = y(i) + lambda * penalty;
+        elseif y(i) > 0
+            y(i) = y(i) - lambda * penalty;
+        end
+    end
+end

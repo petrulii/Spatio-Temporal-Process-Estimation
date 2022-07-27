@@ -2,83 +2,75 @@ function [] = Parameter_recovery_mirror_prox()
     % Set the random seed.
     rng(0);
     % Dimensions of 2-D space grid.
-    row = 2;
+    row = 4;
     col = row;
     % Memeory depth.
     d = 2;
-    periods = 100;
+    periods = 500;
     % Values used in parameter generation.
     radius = 1;
     values = [1 -1];
     % Generating Bernouilli time series of N+1 time instances and L locations.
     [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, 'random', radius, values);
-    disp('Time series:');
-    disp(time_series);
-    disp('True theta:');
-    disp(true_theta);
     
-    theta_init = ones(L, d*L);
-    theta0_init = zeros(1, L);
-    y_init = 1;
-    kappa = 10;
+    kappa = 1;
     rate = 0.1;
     max_iterations = 1000;
-    mirror_prox(N, L, d, time_series, theta_init, theta0_init, y_init, kappa, rate, max_iterations, true_theta, true_theta0);
+    [theta, theta0, y] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0);
+    series_plot(L, N, d, true_theta, true_theta0, theta, theta0);
 end
 
-function [theta, y] = mirror_prox(N, L, d, time_series, theta_init, theta0_init, y_init, kappa, rate, max_iterations, true_theta, true_theta0)
+function [theta, theta0, y] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0)
     % Extragradient descent.
     % param x_init: initial strategy vector for player X
     % param y_init: initial strategy vector for player Y
-    % error = 1000;
-    theta = theta_init;
-    theta0 = theta0_init;
-    y = y_init;
-    i = 0;
-    
-    true_theta = full(true_theta);
-    true_theta0 = full(true_theta0);
-    true_theta = reshape(true_theta.',1,[]);
-    true_theta = [true_theta true_theta0];
+    theta = ones(L,d*L);
+    theta0 = ones(1,L);
+    y = 1;
+
+    log_loss_error = zeros(1,max_iterations);
+    estimation_error = zeros(1,max_iterations);
+    prediction_error = zeros(1,max_iterations);
+    i = 1;
 
     while i <= max_iterations
+        
         % Gradient step to go to an intermediate point.
         [theta_grad, theta0_grad] = gradient_theta(N, L, d, time_series, theta, theta0, y);
-        %disp('theta_grad:');
-        %disp(theta_grad);
         y_grad = gradient_y(N, L, d, time_series, theta, theta0, kappa);
-        %disp('y_grad:');
-        %disp(y_grad);
         
         % Calculate y_i.
         theta_ = projection(theta - rate*(theta_grad));
         theta0_ = projection(theta0 - rate*(theta0_grad));
-        y_ = projection(y + rate*(y_grad));
+        y_ = projsplx(y + rate*(y_grad));
 
         % Use the gradient of the intermediate point to perform a gradient step.
         [theta_grad_, theta0_grad_] = gradient_theta(N, L, d, time_series, theta, theta0, y_);
-        %disp('theta_grad_:');
-        %disp(theta_grad_);
         y_grad_ = gradient_y(N, L, d, time_series, theta_, theta0_, kappa);
-        %disp('y_grad_:');
-        %disp(y_grad_);
         
         % Calculate x_i+1.
         theta = projection(theta - rate*(theta_grad_));
         theta0 = projection(theta0 - rate*(theta0_grad_));
-        y = projection(y + rate*(y_grad_));
-        
-        % Squared error btween estimated theta and true theta.
-        theta_pred = reshape(theta.',1,[]);
-        theta_predict = [theta_pred theta0];
-        dist = sqrt(sum((true_theta-theta_predict).^2));
-        fprintf('%s %d\n', '2-norm of estimation difference:', dist);
-        fprintf('%s %d\n', 'non-zeros in estimated theta:', nnz(theta_predict));
-        disp(theta_predict(1,3,1));
-        disp(true_theta(1,3,1));
+        y = projsplx(y + rate*(y_grad_));
+
+        % Calculate the prediction error over the time horizon.
+        [err, dist] = prediction(time_series((N-d)+1:N,:), time_series(N+1,:), L, true_theta, theta, true_theta0, theta0);
+        log_loss_error(i) = neg_log_loss(N, L, d, time_series, theta, theta0);
+        estimation_error(i) = dist;
+        prediction_error(i) = err;
         
         i = i + 1;
     end
+    figure('visible','on');
+    hold on;
+    plot(log_loss_error);
+    plot(estimation_error);
+    plot(prediction_error);
+    title('Error');
+    xlabel('Iteration');
+    ylabel('Error');
+    legend('Negative Log Loss','Estimation error', 'Prediction error');
+    hold off;
 end
 
 % Identity function.
@@ -93,26 +85,33 @@ function [theta_grad, theta0_grad] = gradient_theta(N, L, d, time_series, theta,
     theta0_grad = theta0_grad*y(1);
 end
 
-% Logistic loss gradient w.r.t. the parameter vector.
-function [theta_log_loss_grad, theta0_log_loss_grad] = log_loss_gradient(N, L, d, time_series, theta, theta0)
-    theta_log_loss_grad = zeros(L, d*L);
-    theta0_log_loss_grad = zeros(1, L);
-    for s = d:(N-1)
-        X = time_series((s-d+1):s,:);
-        X = reshape(X.',1,[]);
-        for l = 1:L
-            y = time_series(s+1,l);
-            a = theta(l,:);
-            b = theta0(l);
-            theta_log_loss_grad(l,:) = a.*((exp(a*X.'+b)/(exp(a*X.'+b)+1))-y);
-            theta0_log_loss_grad(l) = ((exp(a*X.'+b)/(exp(a*X.'+b)+1))-y);
-        end
-    end
-end
-
 % Gradient of the objective w.r.t. the weigth vector y of the obj. f-ion and constraints.
 function y_grad = gradient_y(N, L, d, time_series, theta, theta0, kappa)
     y_grad = neg_log_loss(N, L, d, time_series, theta, theta0) - kappa;
+end
+
+% Gradient descent for time series of 2-D Bernouilli events.
+function [theta_grad, theta0_grad] = log_loss_gradient(N, L, d, series, theta, theta0)
+    theta_grad = zeros(L,d*L);
+    theta0_grad = zeros(1,L);
+    % For each time instance in the time horizon from d to N.
+    for s = d:(N-1)
+        % Take values from the last d time instances.
+        X = series((s-d+1):s,:);
+        X = reshape(X.',1,[]);
+        % For each location in the 2D grid of the current time instance.
+        for l = 1:L
+            y = series(s+1,l);
+            a = theta(l,:);
+            b = theta0(l);
+            % Update the parameter vector.
+            theta_grad(l,:) = theta_grad(l,:) + X.*((-1)/(exp(a*X.'+b) + 1)-y+1);
+            theta0_grad(l) = theta0_grad(l) + ((-1)/(exp(a*X.'+b) + 1)-y+1);
+        end
+    end
+    theta_grad = theta_grad./((N-d-1)*L);
+    theta0_grad = theta0_grad./((N-d-1)*L);
+        
 end
 
 % Negative cross-entropy loss.
@@ -152,4 +151,24 @@ function [rate] = linesearch_stepsize(x_i, y_i, x_i_1, grad_y_i, x2_i, y2_i, x2_
         rate = rate * beta;
         i=i+1;
     end
+end
+
+% Prediction for time series of 2-D Bernouilli events.
+function [err, dist] = prediction(X, y, L, true_theta, theta, true_theta0, theta0)
+    X = reshape(X.',1,[]);
+    prediction = zeros(1,L);
+    % For each location in the 2-D grid.
+    for l = 1:L
+        prediction(l) = sigmoid(theta0(l) + dot(X, theta(l,:)));
+    end
+    % Squared error of the prediction.
+    err = immse(y, prediction);
+    % Squared error btween estimated theta and true theta.
+    true_theta = full(true_theta);
+    true_theta0 = full(true_theta0);
+    true_theta = reshape(true_theta.',1,[]);
+    true_theta = [true_theta true_theta0];
+    theta = reshape(theta.',1,[]);
+    theta = [theta theta0];
+    dist = sqrt(sum((true_theta-theta).^2));
 end
