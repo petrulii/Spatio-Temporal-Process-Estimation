@@ -74,7 +74,7 @@ function [theta, init_intens] = logistic(time_series, N, L, d, lambda)
                     obj = obj + (y*(dot(X,a)+b) - log_sum_exp([0; (dot(X,a)+b)]));
                 end
             end
-            obj = obj/((N-d)*L) - lambda * (sum(sum(abs(theta))) + sum(abs(init_intens)));
+            obj = obj/((N-d)*L) - lambda * (sum(sum(abs(theta))));
             maximize(obj);
         cvx_end;
         % Transform small values of theta to 0s.

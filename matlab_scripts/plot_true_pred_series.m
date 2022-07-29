@@ -1,4 +1,4 @@
-function [] = series_plot(L, N_true, d, theta_true, theta0_true, theta, theta0)
+function [] = plot_true_pred_series(L, N_true, d, theta_true, theta0_true, theta, theta0)
     % For plotting.
     N = N_true+round(N_true/2);
     norm_probability_true = zeros(1,N);
