@@ -22,5 +22,5 @@ function [] = color_plot(v_true,v_pred)
     caxis manual;
     caxis([bottom top]);
     colorbar;
-    saveas(f, 'color_maps', 'png');
+    saveas(f, '/home/im2ag/Desktop/M1/Internship/ljk-dao-internship/matlab_scripts/figures/color_maps', 'png');
 end

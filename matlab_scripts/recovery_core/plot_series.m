@@ -10,5 +10,5 @@ function [] = plot_series(series,n,row,col)
         shading interp;
     end
     colorbar;
-    saveas(f, 'series_heatmaps', 'png');
+    saveas(f, '/home/im2ag/Desktop/M1/Internship/ljk-dao-internship/matlab_scripts/figures/series_heatmaps', 'png');
 end

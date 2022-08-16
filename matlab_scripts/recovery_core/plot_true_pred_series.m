@@ -55,7 +55,7 @@ function [] = plot_true_pred_series(L, N_true, d, theta_true, theta0_true, theta
     xlabel('Time t');
     ylabel('2-norm');
     title('True and estimated time series');
-    legend('estimated \beta_0 at time t','estimated \beta at time t','true \beta_0^* at time t','true \beta^* at time t','N');
-    saveas(f0, 'predicted_true_series', 'png');
+    legend('estimated P_0 at time t','estimated P at time t','true P_0^* at time t','true P^* at time t','N');
+    saveas(f0, '/home/im2ag/Desktop/M1/Internship/ljk-dao-internship/matlab_scripts/figures/predicted_true_series', 'png');
     hold off;
 end

@@ -40,6 +40,6 @@ function [] = plot_series_one_location(L, N, d, theta, theta0, loc)
     ylabel('Values at one location');
     title('Time series at one location');
     legend('p0_{1,t}^*','p_{1,t}^*','y_{1,t}^*');
-    saveas(f0, 'generated_series_one_location', 'png');
+    saveas(f0, '/home/im2ag/Desktop/M1/Internship/ljk-dao-internship/matlab_scripts/figures/generated_series_one_location', 'png');
     hold off;
 end

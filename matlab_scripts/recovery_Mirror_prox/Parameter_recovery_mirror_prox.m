@@ -5,62 +5,62 @@ function [] = Parameter_recovery_mirror_prox()
     row = 5;
     col = row;
     % Memeory depth.
-    d = 3;
+    d = 2;
     periods = 1000;
     % Values used in parameter generation.
     radius = 1;
-    values = [-1 1];
+    values = [-1 -1];
     % Generating Bernouilli time series of N+1 time instances and L locations.
     [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, 'operator', radius, values);
-    %fprintf('%s %d\n', 'sum of theta :', sum(sum(true_theta)));
-    %disp(size(true_theta));
-    %return;
-    plot_series_one_location(L, N, d, true_theta, true_theta0, 2);
+    plot_series_one_location(L, N, d, true_theta, true_theta0, 1);
     plot_series(probabilities(4:124,:),120,row,col);
-    kappa = 12;
     rate = 1;
-    lambda = 0.001;
+    lambda = 0;%.002;
     max_iterations = 100;
-    [theta, theta0, y] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
-    %[theta, theta0] = estimate_parameters(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
+    max_iterations_kappa = 10;
+    [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa);
+    %kappa = 5;
+    %[theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
     plot_true_pred_series(L, N, d, true_theta, true_theta0, theta, theta0);
 end
 
-function [theta, theta0] = estimate_parameters(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda)
-    max_iterations_kappa = 100;
-    left = 0;
-    rigth = 0;
+function [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa)
+    kappa = 1;
+    %theta = randn(L,d*L);
+    %theta0 = randn(1,L);
     for i = 1:max_iterations_kappa
-        if left~=0 && rigth~=0
-            % dycothomie
-            kappa = (rigth - left)/2;
-            [theta, theta0, y] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
-            return;
-        end
-        left = 0;
-        rigth = 0;
-        [theta, theta0, y] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
-        obj = F_kappa(N, L, d, time_series, theta, theta0, y, kappa, lambda);
+        fprintf('%s %d\n', 'kappa search iteration :', i);
+        [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
         if obj > 0
-            left = kappa;
+            %prev_kappa = kappa;
             kappa = kappa * 2;
-        elseif obj < 0
-            rigth = kappa;
-            kappa = kappa / 2;
         else
-            break;
+            while 1
+                if obj <= 0
+                    %diff = (kappa - prev_kappa)/2;
+                    prev_theta = theta;
+                    prev_theta0 = theta0;
+                    %prev_kappa = kappa;
+                    kappa = kappa - 1;%diff;
+                    [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
+                else
+                    theta = prev_theta;
+                    theta0 = prev_theta0;
+                    break;
+                end
+            end
         end
     end
 end
 
-function [theta, theta0, y] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda)
+function [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda)
     % Mirror prox.
     % param N: length of the time horizon of the time series
     % param L: number of locations in the 2D spatial grid
     % param d: memory depth of the process
     % param time_series: time series of the process
-    theta = ones(L,d*L);
-    theta0 = ones(1,L);
+    theta = randn(L,d*L);
+    theta0 = randn(1,L);
     y = [0 0];
 
     log_loss_error = zeros(1,max_iterations);
@@ -74,14 +74,14 @@ function [theta, theta0, y] = mirror_prox(N, L, d, time_series, kappa, rate, max
         fprintf('%s %d\n', 'kappa :', kappa);
         fprintf('%s %d %d\n', 'y0 y1 :', y(1), y(2));
         fprintf('%s %d\n', 'F_0(x) :', neg_log_loss(N, L, d, time_series, theta, theta0) + lambda * l1_norm(theta) - kappa);
-        fprintf('%s %d\n', 'F_1(x) :', sum(sum(theta)));
-        fprintf('%s %d\n', 'F(kappa) :', F_kappa(N, L, d, time_series, theta, theta0, y, kappa, lambda));
+        fprintf('%s %d\n', 'F_1(x) :', constraint1(theta));
+        obj = F_kappa(N, L, d, time_series, theta, theta0, y, kappa, lambda);
+        fprintf('%s %d\n', 'F(kappa) :', obj);
         fprintf('%s %d\n', 'neg log l. :', neg_log_loss(N, L, d, time_series, theta, theta0));
-        fprintf('%s %d\n', 'l1_norm(theta) :', l1_norm(theta));
-        % FIX THISSSSS!!! true_theta norm should be 0
-        fprintf('%s %d\n', 'l1_norm(true_theta) :', l1_norm(true_theta));
-        fprintf('%s %d %d %d\n', 'First values of true theta :', true_theta(1,1), true_theta(1,2), true_theta(1,3));
-        fprintf('%s %d %d %d\n', 'First values of pred. theta :', theta(1,1), theta(1,2), theta(1,3));
+        fprintf('%s %d\n', 'sum(theta) :', sum(sum(theta)));
+        fprintf('%s %d\n', 'sum(true_theta) :', sum(sum(true_theta)));
+        fprintf('%s \n \t %d %d %d \n \t %d %d %d \n', 'First values of true theta :', true_theta(1,1), true_theta(1,2), true_theta(1,3), true_theta(2,1), true_theta(2,2), true_theta(2,3));
+        fprintf('%s \n \t %d %d %d \n \t %d %d %d \n', 'First values of pred. theta :', theta(1,1), theta(1,2), theta(1,3), theta(2,1), theta(2,2), theta(2,3));
 
         % Gradient step to go to an intermediate point.
         [theta_grad, theta0_grad] = gradient_theta(N, L, d, time_series, theta, theta0, y, lambda);
@@ -128,7 +128,7 @@ end
 
 % Gradient of the objective w.r.t. the parameter vector x of the process.
 function res = F_kappa(N, L, d, time_series, theta, theta0, y, kappa, lambda)
-    res = y(2) * (sum(sum(theta))) + y(1) * ((neg_log_loss(N, L, d, time_series, theta, theta0) + lambda * l1_norm(theta)) - kappa);
+    res = y(1) * ((neg_log_loss(N, L, d, time_series, theta, theta0) + lambda * l1_norm(theta)) - kappa) + y(2) * constraint1(theta);
 end
 
 % Gradient of the objective w.r.t. the parameter vector x of the process.
@@ -154,7 +154,7 @@ end
 % Gradient of the objective w.r.t. the weigth vector y of the obj. f-ion and constraints.
 function y_grad = gradient_y(N, L, d, time_series, theta, theta0, kappa, lambda)
     y1_grad = neg_log_loss(N, L, d, time_series, theta, theta0) + lambda * l1_norm(theta) - kappa;
-    y2_grad = sum(sum(theta));
+    y2_grad = constraint1(theta);
     y_grad = [y1_grad, y2_grad];
 end
 
@@ -205,6 +205,10 @@ end
 % L1 penalty function.
 function res = l1_norm(theta)
     res = sum(sum(abs(theta)));
+end
+
+function f1 = constraint1(theta)
+    f1 = sum(sum(theta));
 end
 
 function [rate] = linesearch_stepsize(x_i, y_i, x_i_1, grad_y_i, x2_i, y2_i, x2_i_1, grad_y2_i, rate)

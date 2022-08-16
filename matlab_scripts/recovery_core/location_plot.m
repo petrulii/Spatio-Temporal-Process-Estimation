@@ -59,6 +59,6 @@ function [] = location_plot(L, N, d, theta_true, theta0_true, theta, theta0, loc
     ylabel('Values at one location');
     title('True and estimated time series at one location');
     legend('\beta_0','\beta','y_{l, t}', '\beta_0^*','\beta^*','y_{l, t}^*');
-    saveas(f0, 'predicted_true_series', 'png');
+    saveas(f0, '/home/im2ag/Desktop/M1/Internship/ljk-dao-internship/matlab_scripts/figures/predicted_true_series', 'png');
     hold off;
 end
