@@ -6,7 +6,7 @@ function [] = Parameter_recovery_mirror_prox()
     col = row;
     % Memeory depth.
     d = 2;
-    periods = 1000;
+    periods = 2000;
     % Values used in parameter generation.
     radius = 1;
     values = [-1 -1];
@@ -15,8 +15,8 @@ function [] = Parameter_recovery_mirror_prox()
     plot_series_one_location(L, N, d, true_theta, true_theta0, 1);
     plot_series(probabilities(4:124,:),120,row,col);
     rate = 1;
-    lambda = 0;%.002;
-    max_iterations = 100;
+    lambda = 0.002;
+    max_iterations = 2000;
     max_iterations_kappa = 10;
     [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa);
     %kappa = 5;
@@ -32,7 +32,7 @@ function [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_i
         fprintf('%s %d\n', 'kappa search iteration :', i);
         [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
         if obj > 0
-            %prev_kappa = kappa;
+            prev_kappa = kappa;
             kappa = kappa * 2;
         else
             while 1
@@ -40,14 +40,19 @@ function [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_i
                     %diff = (kappa - prev_kappa)/2;
                     prev_theta = theta;
                     prev_theta0 = theta0;
-                    %prev_kappa = kappa;
-                    kappa = kappa - 1;%diff;
+                    prev_kappa = kappa;
+                    kappa = kappa - 0.5;%diff;
                     [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
                 else
                     theta = prev_theta;
                     theta0 = prev_theta0;
+                    fprintf('%s %d\n', 'found kappa, exiting the loop now :', prev_kappa);
+                    flag=1; 
                     break;
                 end
+            end
+            if flag==1
+                break;
             end
         end
     end

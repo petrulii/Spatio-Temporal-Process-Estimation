@@ -16,10 +16,11 @@ function [] = Parameter_recovery_mirror_prox()
     plot_series(probabilities(4:124,:),120,row,col);
     rate = 1;
     lambda = 0;%.002;
-    max_iterations = 100;
+    max_iterations = 1000;
     max_iterations_kappa = 10;
-    estimate_parameters(N, L, d, time_series, rate, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa)
-    %[theta, theta0, y] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
+    [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa);
+    %kappa = 5;
+    %[theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
     plot_true_pred_series(L, N, d, true_theta, true_theta0, theta, theta0);
 end
 
@@ -27,29 +28,32 @@ function [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_i
     kappa = 1;
     %theta = randn(L,d*L);
     %theta0 = randn(1,L);
-    obj = 1000;
     for i = 1:max_iterations_kappa
-        prev_obj = obj;
-        [theta, theta0, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
+        fprintf('%s %d\n', 'kappa search iteration :', i);
+        [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
         if obj > 0
             prev_kappa = kappa;
             kappa = kappa * 2;
         else
             while 1
                 if obj <= 0
-                    diff = (kappa - prev_kappa)/2;
+                    %diff = (kappa - prev_kappa)/2;
+                    prev_theta = theta;
+                    prev_theta0 = theta0;
                     prev_kappa = kappa;
-                    kappa = kappa - diff;
-                    [new_theta, new_theta0, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
+                    kappa = kappa - 1;%diff;
+                    [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
                 else
-                    theta = new_theta;
-                    theta0 = new_theta0;
-                    end
-                else
-                    
+                    theta = prev_theta;
+                    theta0 = prev_theta0;
+                    fprintf('%s %d\n', 'found kappa, exiting the loop now :', prev_kappa);
+                    flag=1; 
+                    break;
                 end
             end
-            break;
+            if flag==1
+                break;
+            end
         end
     end
 end
