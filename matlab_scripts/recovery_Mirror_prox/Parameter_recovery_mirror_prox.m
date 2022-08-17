@@ -6,22 +6,49 @@ function [] = Parameter_recovery_mirror_prox()
     col = row;
     % Memeory depth.
     d = 2;
-    periods = 2000;
+    % The length of the time horizon is d*periods+1.
+    all_periods = [10 100 1000 10000];
+    len_periods = length(all_periods);
     % Values used in parameter generation.
     radius = 1;
     values = [-1 -1];
-    % Generating Bernouilli time series of N+1 time instances and L locations.
-    [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, 'operator', radius, values);
-    plot_series_one_location(L, N, d, true_theta, true_theta0, 1);
-    plot_series(probabilities(4:124,:),120,row,col);
+    % Lists for plotting.
+    iterations = 4;
+    all_N = zeros(1, len_periods);
+    error_log_l1 = zeros(iterations,len_periods);
+    error_lin_l1 = zeros(iterations,len_periods);
+    zer_log_l1 = zeros(iterations,len_periods);
+    zer_lin_l1 = zeros(iterations,len_periods);
+    theta_norm_log_l1 = zeros(iterations,len_periods);
+    theta_norm_lin_l1 = zeros(iterations,len_periods);
+    % Mirror-prox hyper-parameters.
     rate = 1;
-    lambda = 0.002;
-    max_iterations = 2000;
+    lambda = 0.001;
+    max_iterations = 1500;
     max_iterations_kappa = 10;
-    [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa);
-    %kappa = 5;
-    %[theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
-    plot_true_pred_series(L, N, d, true_theta, true_theta0, theta, theta0);
+    
+    for i = 1:iterations
+        % Regularization hyper-parameter.
+        for j = 1:len_periods
+            
+            fprintf('\n\n\n%s %d %s %d\n\n', 'Iteration:', i, ', period index:', j);
+            periods = all_periods(j);
+            % Generating Bernouilli time series of N+1 time instances and L locations.
+            [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, periods, 'operator', radius, values);
+            all_N(j) = N;
+            
+            % Maximum likelihood estimation with lasso.
+            [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa);
+            % Generate a prediction and compare with groud truth.
+            [err_log_l1, z_log_l1, t_n_log_l1] = predict(time_series((N-d)+1:N,:), time_series(N+1,:), L, d, true_theta, theta, true_theta0, theta0, row, col, @sigmoid);
+            zer_log_l1(i,j) = z_log_l1;
+            error_log_l1(i,j) = err_log_l1;
+            theta_norm_log_l1(i,j) = t_n_log_l1;
+            
+        end
+    end
+    
+    Parameter_recovery_plot(all_N, zer_log_l1, error_log_l1, theta_norm_log_l1, zer_lin_l1, error_lin_l1, theta_norm_lin_l1, 'N');
 end
 
 function [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa)
@@ -46,7 +73,6 @@ function [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_i
                 else
                     theta = prev_theta;
                     theta0 = prev_theta0;
-                    fprintf('%s %d\n', 'found kappa, exiting the loop now :', prev_kappa);
                     flag=1; 
                     break;
                 end
@@ -119,16 +145,16 @@ function [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate
 
         i = i + 1;
     end
-    figure('visible','on');
-    hold on;
-    plot(log_loss_error);
-    plot(estimation_error);
-    plot(prediction_error);
-    title('Error');
-    xlabel('Iteration');
-    ylabel('Error');
-    legend('Negative Log Loss','Estimation error', 'Prediction error');
-    hold off;
+    %figure('visible','on');
+    %hold on;
+    %plot(log_loss_error);
+    %plot(estimation_error);
+    %plot(prediction_error);
+    %title('Error');
+    %xlabel('Iteration');
+    %ylabel('Error');
+    %legend('Negative Log Loss','Estimation error', 'Prediction error');
+    %hold off;
 end
 
 % Gradient of the objective w.r.t. the parameter vector x of the process.
