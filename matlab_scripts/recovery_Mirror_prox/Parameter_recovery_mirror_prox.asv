@@ -7,13 +7,13 @@ function [] = Parameter_recovery_mirror_prox()
     % Memeory depth.
     d = 2;
     % The length of the time horizon is d*periods+1.
-    all_periods = [10 100 1000 10000];
+    all_periods = [10 100 1000];% 10000];
     len_periods = length(all_periods);
     % Values used in parameter generation.
     radius = 1;
     values = [-1 -1];
     % Lists for plotting.
-    iterations = 10;
+    iterations = 2;
     all_N = zeros(1, len_periods);
     error_log_l1 = zeros(iterations,len_periods);
     error_lin_l1 = zeros(iterations,len_periods);
@@ -23,13 +23,9 @@ function [] = Parameter_recovery_mirror_prox()
     theta_norm_lin_l1 = zeros(iterations,len_periods);
     % Mirror-prox hyper-parameters.
     rate = 1;
-    lambda = 0.0005;
+    lambda = 0.001;
     max_iterations = 1500;
     max_iterations_kappa = 10;
-    
-    [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, 10000, 'operator', radius, values);
-    [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa);
-    return;
     
     for i = 1:iterations
         % Regularization hyper-parameter.
@@ -57,10 +53,8 @@ end
 
 function [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa)
     kappa = 1;
-    [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
     %theta = randn(L,d*L);
     %theta0 = randn(1,L);
-    %{
     for i = 1:max_iterations_kappa
         fprintf('%s %d\n', 'kappa search iteration :', i);
         [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda);
@@ -88,7 +82,6 @@ function [theta, theta0] = estimate_parameters(N, L, d, time_series, rate, max_i
             end
         end
     end
-    %}
 end
 
 function [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate, max_iterations, true_theta, true_theta0, lambda)
@@ -152,16 +145,16 @@ function [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, rate
 
         i = i + 1;
     end
-    figure('visible','on');
-    hold on;
-    plot(log_loss_error);
-    plot(estimation_error);
-    plot(prediction_error);
-    title('Error');
-    xlabel('Iteration');
-    ylabel('Error');
-    legend('Negative Log Loss','Estimation error', 'Prediction error');
-    hold off;
+    %figure('visible','on');
+    %hold on;
+    %plot(log_loss_error);
+    %plot(estimation_error);
+    %plot(prediction_error);
+    %title('Error');
+    %xlabel('Iteration');
+    %ylabel('Error');
+    %legend('Negative Log Loss','Estimation error', 'Prediction error');
+    %hold off;
 end
 
 % Gradient of the objective w.r.t. the parameter vector x of the process.
@@ -181,9 +174,9 @@ function res = l1_prox(x, rows, cols, lambda)
     for i = 1:rows
         for j = 1:cols
             if x(i,j) > 0
-                res(i,j) = 1 * lambda;%max(abs(x(i,j))-lambda, 0);
+                res(i,j) = max(abs(x(i,j))-lambda, 0);
             elseif x(i,j) < 0
-                res(i, j) = -1 * lambda;% * max(abs(x(i,j))-lambda, 0);
+                res(i, j) = -1 * max(abs(x(i,j))-lambda, 0);
             end
         end
     end
