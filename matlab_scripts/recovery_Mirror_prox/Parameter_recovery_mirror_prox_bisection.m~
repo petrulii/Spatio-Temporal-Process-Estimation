@@ -56,8 +56,8 @@ end
 
 function [theta, theta0] = estimate_parameters(N, L, d, time_series, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa)
     kappa = 1;
-    theta = ones(L,d*L);
-    theta0 = ones(1,L);
+    theta = randn(L,d*L);
+    theta0 = randn(1,L);
     
     % Searching for kappa.
     for i = 1:max_iterations_kappa
@@ -154,8 +154,8 @@ function [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, max_
         y_grad_ = gradient_y(N, L, d, time_series, theta_, theta0_, kappa, lambda);
 
         % Calculate x_i+1.
-        %theta = theta + prox(N, L, d, time_series, theta, theta0, rate, y, lambda);
-        theta = theta - rate*theta_grad_;
+        theta = theta + prox(N, L, d, time_series, theta, theta0, rate, y, lambda);
+        %theta = theta - rate*theta_grad_;
         theta0 = theta0 - rate*theta0_grad_;
         fprintf('%s %d\n', 'l1_norm(theta_grad)', l1_norm(theta_grad_));
         % Stop if the gradient is very small.
