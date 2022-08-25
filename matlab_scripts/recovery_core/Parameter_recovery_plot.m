@@ -18,7 +18,7 @@ function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_lo
     xlabel(x_label);
     ylabel('Non-zero values in \beta');
     legend('Maximum likelihood + L1','Maximum likelihood 95% CI','Least squares + L1','Least squares 95% CI');
-    saveas(f1, '/home/im2ag/Desktop/M1/Internship/ljk-dao-internship/matlab_scripts/figures/beta_non_zero_values', 'fig');
+    saveas(f1, '~/ljk-dao-internship/matlab_scripts/figures/beta_non_zero_values', 'fig');
     hold off;
     
     % Prediction error plot.    
@@ -39,7 +39,7 @@ function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_lo
     xlabel(x_label);
     ylabel('MSE of p_{N+1}^{*} and p_{N+1}');
     legend('Maximum likelihood + L1','Maximum likelihood 95% CI','Least squares + L1','Least squares 95% CI');
-    saveas(f2, '/home/im2ag/Desktop/M1/Internship/ljk-dao-internship/matlab_scripts/figures/prediction_error_MSE', 'fig');
+    saveas(f2, '~/ljk-dao-internship/matlab_scripts/figures/prediction_error_MSE', 'fig');
     hold off;
     
     % Estimation error plot.  
@@ -60,7 +60,7 @@ function [] = Parameter_recovery_plot(x, zer_log_l1, error_log_l1, theta_norm_lo
     xlabel(x_label);
     ylabel('2-norm of \beta^* - \beta');
     legend('Maximum likelihood + L1','Maximum likelihood 95% CI','Least squares + L1','Least squares 95% CI');
-    saveas(f3, '/home/im2ag/Desktop/M1/Internship/ljk-dao-internship/matlab_scripts/figures/beta_estimation_error_2_norm', 'fig');
+    saveas(f3, '~/ljk-dao-internship/matlab_scripts/figures/beta_estimation_error_2_norm', 'fig');
     hold off;
 end
 
@@ -106,5 +106,5 @@ function [] = color_plot(v_true,v_pred)
     caxis manual;
     caxis([bottom top]);
     colorbar;
-    saveas(f, '/home/im2ag/Desktop/M1/Internship/ljk-dao-internship/matlab_scripts/figures/color_maps', 'png');
+    saveas(f, '~/ljk-dao-internship/matlab_scripts/figures/color_maps', 'png');
 end

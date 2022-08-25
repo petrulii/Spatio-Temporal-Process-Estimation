@@ -7,13 +7,13 @@ function [] = Parameter_recovery_mirror_prox_bisection()
     % Memeory depth.
     d = 2;
     % The length of the time horizon is d*periods+1.
-    all_periods = [10 100 1000];
+    all_periods = [10 100 1000 10000];
     len_periods = length(all_periods);
     % Values used in parameter generation.
     radius = 1;
     values = [-1 -1];
     % Lists for plotting.
-    iterations = 2;
+    iterations = 5;
     all_N = zeros(1, len_periods);
     error_log_l1 = zeros(iterations,len_periods);
     error_lin_l1 = zeros(iterations,len_periods);
@@ -23,12 +23,12 @@ function [] = Parameter_recovery_mirror_prox_bisection()
     theta_norm_lin_l1 = zeros(iterations,len_periods);
     % Mirror-prox hyper-parameters.
     lambda = 0.0005;
-    max_iterations = 1000;
+    max_iterations = 1500;
     max_iterations_kappa = 10;
     
-    [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, 1000, 'operator', radius, values);
-    [theta, theta0] = estimate_parameters(N, L, d, time_series, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa);
-    return;
+    %[time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, 1000, 'operator', radius, values);
+    %[theta, theta0] = estimate_parameters(N, L, d, time_series, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa);
+    %return;
     
     for i = 1:iterations
         % Regularization hyper-parameter.
@@ -158,13 +158,15 @@ function [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, max_
         theta = theta - rate*theta_grad_;
         theta0 = theta0 - rate*theta0_grad_;
         fprintf('%s %d\n', 'l1_norm(theta_grad)', l1_norm(theta_grad_));
-        % Stop if the gradient is very small.
-        if (l1_norm(theta_grad_) < 0.001)
-            break;
-        end
+        
         % Project onto the simplex.
         y = projsplx(y + rate*(y_grad_));
-        theta(theta>-0.001 & theta<0.001) = 0;
+        
+        % Stop if the gradient is very small.
+        if (l1_norm(theta_grad_) < 0.01)
+            break;
+        end
+        theta(theta>-0.0001 & theta<0.0001) = 0;
 
         [err, dist] = prediction(time_series((N-d)+1:N,:), time_series(N+1,:), L, true_theta, theta, true_theta0, theta0);
         % Total Neg. Log Loss.
@@ -176,7 +178,7 @@ function [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, max_
 
         i = i + 1;
     end
-    
+    %{
     figure('visible','on');
     hold on;
     plot(log_loss_error);
@@ -187,7 +189,7 @@ function [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, max_
     ylabel('Error');
     legend('Negative Log Loss','Estimation error', 'Prediction error');
     hold off;
-    
+    %}
 end
 
 function [t] = adaptive_rate(N, L, d, time_series, theta, theta0, y, kappa, lambda)
@@ -266,8 +268,8 @@ function [theta_grad, theta0_grad] = log_loss_gradient(N, L, d, series, theta, t
             b = theta0(l);
             % Update the parameter vector.
             p = sigmoid(a*X.'+b);
-            theta_grad(l,:) = theta_grad(l,:) + X.*(p-y);%X.*((-1)/(exp(a*X.'+b) + 1)-y+1);
-            theta0_grad(l) = theta0_grad(l) + (p-y);%((-1)/(exp(a*X.'+b) + 1)-y+1);
+            theta_grad(l,:) = theta_grad(l,:) + X.*((-1)/(exp(a*X.'+b) + 1)-y+1);%X.*(p-y);%X.*((-1)/(exp(a*X.'+b) + 1)-y+1);
+            theta0_grad(l) = theta0_grad(l) + ((-1)/(exp(a*X.'+b) + 1)-y+1);%(p-y);%((-1)/(exp(a*X.'+b) + 1)-y+1);
         end
     end
     theta_grad = theta_grad./((N-d)*L);
