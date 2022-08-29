@@ -1,34 +1,33 @@
 function [] = plot_true_pred_series(L, N_true, d, theta_true, theta0_true, theta, theta0)
     % For plotting.
-    N = N_true+round(N_true/2);
+    N = N_true+round(N_true);
     norm_probability_true = zeros(1,N);
     norm_probability_pred = zeros(1,N);
     % Initialiazing the time horizon.
     time_horizon = zeros(N,L);
     probabilities_true = zeros(N,L);
     probabilities_pred = zeros(N,L);
+    time_horizon_pred = zeros(N,L);
     for s = (1:d)
         x = normrnd(0, 1, 1, L);
         x(x>=0) = 1;
         x(x<0) = 0;
         for l = 1:L
             time_horizon(s,:) = x;
+            time_horizon_pred(s,:) = x;
         end
     end
     % Generate time series.
     for s = (d+1):(N)
         X = time_horizon((s-d):(s-1),:);
+        X_pred = time_horizon_pred((s-d):(s-1),:);
         X = reshape(X.',1,[]);
-        if s <= (N_true+1)
-            X_hat = X;
-        else
-            X_hat = probabilities_pred((s-d):(s-1),:);
-            X_hat = reshape(X_hat.',1,[]);
-        end
+        X_pred = reshape(X_pred.',1,[]);
         for l = 1:L
             p_true = sigmoid(theta0_true(l) + dot(X, theta_true(l,:)));
-            p_pred = sigmoid(theta0(l) + dot(X_hat, theta(l,:)));
+            p_pred = sigmoid(theta0(l) + dot(X_pred, theta(l,:)));
             time_horizon(s,l) = Bernouilli_draw(p_true);
+            time_horizon_pred(s,l) = Bernouilli_draw(p_pred);
             probabilities_true(s,l) = p_true;
             probabilities_pred(s,l) = p_pred;
             % Calculating the 2-norms.

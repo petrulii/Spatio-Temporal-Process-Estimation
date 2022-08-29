@@ -1,4 +1,4 @@
-function [] = Parameter_recovery_mirror_prox_bisection()
+function [] = Parameter_recovery_mirror_prox_fixed()
     % Set the random seed.
     rng(0);
     % Dimensions of 2-D space grid.

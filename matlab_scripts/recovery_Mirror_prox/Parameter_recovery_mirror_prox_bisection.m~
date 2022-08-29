@@ -7,13 +7,13 @@ function [] = Parameter_recovery_mirror_prox_bisection()
     % Memeory depth.
     d = 2;
     % The length of the time horizon is d*periods+1.
-    all_periods = [10 100 1000];
+    all_periods = [10 100];% 1000 10000];
     len_periods = length(all_periods);
     % Values used in parameter generation.
     radius = 1;
     values = [-1 -1];
     % Lists for plotting.
-    iterations = 2;
+    iterations = 5;
     all_N = zeros(1, len_periods);
     error_log_l1 = zeros(iterations,len_periods);
     error_lin_l1 = zeros(iterations,len_periods);
@@ -22,12 +22,13 @@ function [] = Parameter_recovery_mirror_prox_bisection()
     theta_norm_log_l1 = zeros(iterations,len_periods);
     theta_norm_lin_l1 = zeros(iterations,len_periods);
     % Mirror-prox hyper-parameters.
-    lambda = 0.0005;
-    max_iterations = 1000;
+    lambda = 0;%.0005;
+    max_iterations = 2500;
     max_iterations_kappa = 10;
     
-    [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, 1000, 'operator', radius, values);
+    [time_series, probabilities, N, L, true_theta, true_theta0] = generate_series(row, col, d, 100, 'operator', radius, values);
     [theta, theta0] = estimate_parameters(N, L, d, time_series, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa);
+    plot_true_pred_series(L, N, d, true_theta, true_theta0, theta, theta0);
     return;
     
     for i = 1:iterations
@@ -56,8 +57,8 @@ end
 
 function [theta, theta0] = estimate_parameters(N, L, d, time_series, max_iterations, true_theta, true_theta0, lambda, max_iterations_kappa)
     kappa = 1;
-    theta = randn(L,d*L);
-    theta0 = randn(1,L);
+    theta = ones(L,d*L);
+    theta0 = ones(1,L);
     
     % Searching for kappa.
     for i = 1:max_iterations_kappa
@@ -143,28 +144,28 @@ function [theta, theta0, y, obj] = mirror_prox(N, L, d, time_series, kappa, max_
         y_grad = gradient_y(N, L, d, time_series, theta, theta0, kappa, lambda);
         
         % Calculate y_i.
-        %theta_ = theta - prox(theta, theta_grad, rate, L, d);
         theta_ = theta - rate*theta_grad;
+        theta_ = l1_prox(theta_, L, d*L, lambda);
         theta0_ = theta0 - rate*theta0_grad;
         % Project onto the simplex.
         y_ = projsplx(y + rate*(y_grad));
 
         % Use the gradient of the intermediate point to perform a gradient step.
-        [theta_grad_, theta0_grad_] = gradient_theta(N, L, d, time_series, theta, theta0, y_, lambda);
+        [theta_grad_, theta0_grad_] = gradient_theta(N, L, d, time_series, theta_, theta0_, y_, lambda);
         y_grad_ = gradient_y(N, L, d, time_series, theta_, theta0_, kappa, lambda);
 
         % Calculate x_i+1.
-        theta = theta + prox(N, L, d, time_series, theta, theta0, rate, y, lambda);
-        %theta = theta - rate*theta_grad_;
+        theta = theta - rate*theta_grad_;
+        theta = l1_prox(theta, L, d*L, lambda);
         theta0 = theta0 - rate*theta0_grad_;
-        fprintf('%s %d\n', 'l1_norm(theta_grad)', l1_norm(theta_grad_));
-        % Stop if the gradient is very small.
-        if (l1_norm(theta_grad_) < 0.001)
-            break;
-        end
         % Project onto the simplex.
         y = projsplx(y + rate*(y_grad_));
-        theta(theta>-0.001 & theta<0.001) = 0;
+        
+        % Stop if the gradient is very small.
+        if (l1_norm(theta_grad_) < 0.1)
+            break;
+        end
+        theta(theta>-0.0001 & theta<0.0001) = 0;
 
         [err, dist] = prediction(time_series((N-d)+1:N,:), time_series(N+1,:), L, true_theta, theta, true_theta0, theta0);
         % Total Neg. Log Loss.
@@ -205,15 +206,20 @@ function [t] = adaptive_rate(N, L, d, time_series, theta, theta0, y, kappa, lamb
 end
 
 % Prox mapping.
-function [x] = prox(N, L, d, time_series, theta, theta0, rate, y, lambda)
+function [x] = prox(N, L, d, time_series, y, kappa, lambda, theta0, theta, theta_grad, rate)
     theta_vec = reshape(theta.',1,[]);
+    theta_grad_vec = reshape(theta_grad.',1,[]);
     cvx_begin
         variable x(L, d*L);
         x_vec = reshape(x.',1,[]);
-        x_grad = gradient_theta(N, L, d, time_series, x, theta0, y, lambda);
-        x_grad_vec = reshape(x_grad.',1,[]);
-        minimize(dot(rate*x_grad_vec, x_vec-theta_vec) + norm(x_vec-theta_vec));
+        minimize(dot(rate*theta_grad_vec, x_vec-theta_vec)+berg_divergence(N, L, d, time_series, y, kappa, lambda, theta0, x, x_vec, theta, theta_vec, theta_grad_vec));
     cvx_end
+end
+
+function [div] = berg_divergence(N, L, d, time_series, y, kappa, lambda, theta0, p, p_vec, q, q_vec, q_grad)
+    f_p = F_kappa(N, L, d, time_series, p, theta0, y, kappa, lambda);
+    f_q = F_kappa(N, L, d, time_series, q, theta0, y, kappa, lambda);
+    div = f_p - f_q - dot(q_grad, p_vec-q_vec);
 end
 
 % Gradient of the objective w.r.t. the parameter vector x of the process.
@@ -226,18 +232,20 @@ function [theta_grad, theta0_grad] = gradient_theta(N, L, d, time_series, theta,
     % Gradient step of the differentiable log. loss.
     [theta_grad, theta0_grad] = log_loss_gradient(N, L, d, time_series, theta, theta0);
     % Prox operator of the L1 norm.
-    theta_grad = (theta_grad + l1_prox(theta, L, d*L, lambda))*y(1) + y(2);
+    theta_grad = (theta_grad)*y(1) + y(2);
+    %theta_grad = (theta_grad + l1_prox(theta, L, d*L, lambda))*y(1) + y(2);
     theta0_grad = theta0_grad + y(2);
 end
 
 function res = l1_prox(x, rows, cols, lambda)
-    res = zeros(rows, cols);
     for i = 1:rows
         for j = 1:cols
-            if x(i,j) > lambda
-                res(i,j) = 1 * lambda;
-            elseif x(i,j) < (-1 * lambda)
-                res(i, j) = -1 * lambda;
+            if x(i,j) <= lambda
+                x(i,j) = -1 * max(abs(x(i,j))-lambda,0);
+            if x(i,j) >= lambda
+                x(i,j) = 1 * max(abs(x)-lambda,0);
+            elseif x(i,j) <= lambda
+                x(i,j) = -1 * max(abs(x(i,j))-lambda,0);
             end
         end
     end
@@ -266,8 +274,8 @@ function [theta_grad, theta0_grad] = log_loss_gradient(N, L, d, series, theta, t
             b = theta0(l);
             % Update the parameter vector.
             p = sigmoid(a*X.'+b);
-            theta_grad(l,:) = theta_grad(l,:) + X.*(p-y);%X.*((-1)/(exp(a*X.'+b) + 1)-y+1);
-            theta0_grad(l) = theta0_grad(l) + (p-y);%((-1)/(exp(a*X.'+b) + 1)-y+1);
+            theta_grad(l,:) = theta_grad(l,:) + X.*((-1)/(exp(a*X.'+b) + 1)-y+1);%X.*(p-y);%X.*((-1)/(exp(a*X.'+b) + 1)-y+1);
+            theta0_grad(l) = theta0_grad(l) + ((-1)/(exp(a*X.'+b) + 1)-y+1);%(p-y);%((-1)/(exp(a*X.'+b) + 1)-y+1);
         end
     end
     theta_grad = theta_grad./((N-d)*L);
@@ -279,7 +287,6 @@ function obj = neg_log_loss(N, L, d, time_series, theta, theta0)
     obj = 0;
     for s = d:(N-1)
         X = time_series((s-d+1):s,:);
-        % TODO: try without the following and with transpose
         X = reshape(X.',1,[]);
         % For each location in the 2-D grid.
         for l = 1:L
@@ -288,7 +295,6 @@ function obj = neg_log_loss(N, L, d, time_series, theta, theta0)
             b = theta0(l);
             % Log-likelihood with L1 penalty.
             obj = obj + (log_sum_exp([0; (dot(X,a)+b)]) - (y*(dot(X,a)+b)));
-            %obj = obj + log(1 + exp(X.'*theta+theta0)) - y*(X.'*theta+theta0) / (N*L);
         end
     end
     obj = obj/((N-d)*L);
